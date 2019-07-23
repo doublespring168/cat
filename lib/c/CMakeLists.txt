@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(ccat)
 
-set(CCAT_VERSION 3.0.0)
+set(CCAT_VERSION 3.0.1)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/ccat/version.h)
 
@@ -27,12 +27,13 @@ use_c99()
 # set(BUILD_SCRIPT 1)
 
 add_definitions("-Wno-format-security")
-# add_definitions_c("-Wno-incompatible-pointer-types")
 
 if (APPLE)
     add_definitions_c("-Wno-ignored-qualifiers")
+    add_definitions_c("-Wno-compare-distinct-pointer-types")
 else()
     add_definitions_c("-Wno-discarded-qualifiers")
+    add_definitions_c("-Wno-incompatible-pointer-types")
 endif()
 
 include_directories(include)
@@ -74,6 +75,7 @@ set_target_properties(catclient-static PROPERTIES OUTPUT_NAME catclient)
 add_library(catclient-shared SHARED ${HEADER_FILES} ${SOURCE_FILES})
 set_target_properties(catclient-shared PROPERTIES OUTPUT_NAME catclient)
 install(TARGETS catclient-shared DESTINATION lib)
+install(TARGETS catclient-static DESTINATION lib)
 
 if (BUILD_SCRIPT)
     add_executable(test_client ${HEADER_FILES} ${SOURCE_FILES} scripts/cat_client_test.c)
