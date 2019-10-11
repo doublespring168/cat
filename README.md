@@ -1,14 +1,31 @@
+
+
+
+
 <img src="https://github.com/dianping/cat/raw/master/cat-home/src/main/webapp/images/logo/cat_logo03.png" width="50%">
 
 **CAT**
  [![GitHub stars](https://img.shields.io/github/stars/dianping/cat.svg?style=social&label=Star&)](https://github.com/dianping/cat/stargazers)
  [![GitHub forks](https://img.shields.io/github/forks/dianping/cat.svg?style=social&label=Fork&)](https://github.com/dianping/cat/fork)
 
+
 ### CAT 简介 
 
 - CAT 是基于 Java 开发的实时应用监控平台，为美团点评提供了全面的实时监控告警服务。
 - CAT 作为服务端项目基础组件，提供了 Java, C/C++, Node.js, Python, Go 等多语言客户端，已经在美团点评的基础架构中间件框架（MVC框架，RPC框架，数据库框架，缓存框架等，消息队列，配置系统等）深度集成，为美团点评各业务线提供系统丰富的性能指标、健康状况、实时告警等。
 - CAT 很大的优势是它是一个实时系统，CAT 大部分系统是分钟级统计，但是从数据生成到服务端处理结束是秒级别，秒级定义是48分钟40秒，基本上看到48分钟38秒数据，整体报表的统计粒度是分钟级；第二个优势，监控数据是全量统计，客户端预计算；链路数据是采样计算。
+
+
+### 开发环境搭建说明
+- 下载mvn-repo分支,运行如下2个mvn命令,安装依赖包到本地repo仓库
+   - plexus-container-default-1.6.jar(自行去maven central仓库下载)
+        
+        mvn install:install-file -Dfile=plexus-container-default-1.6.jar -DgroupId=org.codehaus.plexus -DartifactId=plexus-container-default -Dversion=3.1.0 -Dpackaging=jar
+        
+   - test-framework(mvn-repo分支中查找)
+        
+        mvn install:install-file -Dfile=plexus-container-default-1.6.jar -DgroupId=org.codehaus.plexus -DartifactId=plexus-container-default -Dversion=3.1.0 -Dpackaging=jar
+
 
 ### Cat 产品价值
 
@@ -101,3 +118,4 @@
 
 - Mail: cat@dianping.com，
 - [**Issues**](https://github.com/dianping/cat/issues)
+
