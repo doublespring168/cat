@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.dianping.cat</groupId>
 	<artifactId>parent</artifactId>
-	<version>3.0.0</version>
+	<version>6.0.0</version>
 	<name>parent</name>
 	<description>Central Application Tracking</description>
 	<packaging>pom</packaging>
@@ -122,7 +122,7 @@
 			<dependency>
 				<groupId>io.netty</groupId>
 				<artifactId>netty-all</artifactId>
-				<version>4.0.24.Final</version>
+				<version>4.1.33.Final</version>
 			</dependency>
 			<dependency>
 				<groupId>com.google.code.gson</groupId>
