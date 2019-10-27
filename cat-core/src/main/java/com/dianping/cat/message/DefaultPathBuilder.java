@@ -18,10 +18,10 @@
  */
 package com.dianping.cat.message;
 
+import org.unidal.lookup.annotation.Named;
+
 import java.text.MessageFormat;
 import java.util.Date;
-
-import org.unidal.lookup.annotation.Named;
 
 @Named(type = PathBuilder.class)
 public class DefaultPathBuilder implements PathBuilder {

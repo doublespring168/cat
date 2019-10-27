@@ -32,14 +32,14 @@ package com.dianping.cat.message;
 	* @see Event, Heartbeat, Transaction
 	*/
 public interface Message {
-	public static final String SUCCESS = "0";
+    String SUCCESS = "0";
 
 	/**
 		* add one or multiple key-value pairs to the message.
 		*
 		* @param keyValuePairs key-value pairs like 'a=1&b=2&...'
 		*/
-	public void addData(String keyValuePairs);
+    void addData(String keyValuePairs);
 
 	/**
 		* add one key-value pair to the message.
@@ -47,47 +47,54 @@ public interface Message {
 		* @param key
 		* @param value
 		*/
-	public void addData(String key, Object value);
+    void addData(String key, Object value);
 
 	/**
 		* Complete the message construction.
 		*/
-	public void complete();
+    void complete();
 
 	/**
 		* @return key value pairs data
 		*/
-	public Object getData();
+    Object getData();
 
 	/**
 		* Message name.
 		*
 		* @return message name
 		*/
-	public String getName();
+    String getName();
 
 	/**
 		* Get the message status.
 		*
 		* @return message status. "0" means success, otherwise error code.
 		*/
-	public String getStatus();
+    String getStatus();
 
 	/**
 		* Set the message status with exception class name.
 		*
 		* @param e exception.
 		*/
-	public void setStatus(Throwable e);
+    void setStatus(Throwable e);
+
+    /**
+     * Set the message status.
+     *
+     * @param status message status. "0" means success, otherwise error code.
+     */
+    void setStatus(String status);
 
 	/**
 		* The time stamp the message was created.
 		*
 		* @return message creation time stamp in milliseconds
-		*/
-	public long getTimestamp();
+     */
+    long getTimestamp();
 
-	public void setTimestamp(long timestamp);
+    void setTimestamp(long timestamp);
 
 	/**
 		* Message type.
@@ -105,27 +112,20 @@ public interface Message {
 		* </p>
 		*
 		* @return message type
-		*/
-	public String getType();
+     */
+    String getType();
 
 	/**
 		* If the complete() method was called or not.
 		*
 		* @return true means the complete() method was called, false otherwise.
-		*/
-	public boolean isCompleted();
+     */
+    boolean isCompleted();
 
 	/**
 		* @return
-		*/
-	public boolean isSuccess();
+     */
+    boolean isSuccess();
 
-	/**
-		* Set the message status.
-		*
-		* @param status message status. "0" means success, otherwise error code.
-		*/
-	public void setStatus(String status);
-
-	public void setSuccessStatus();
+    void setSuccessStatus();
 }

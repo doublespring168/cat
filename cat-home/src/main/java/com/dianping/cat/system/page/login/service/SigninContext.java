@@ -18,10 +18,10 @@
  */
 package com.dianping.cat.system.page.login.service;
 
+import com.dianping.cat.system.page.login.spi.IContext;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import com.dianping.cat.system.page.login.spi.IContext;
 
 public class SigninContext implements IContext {
 	private HttpServletRequest m_request;

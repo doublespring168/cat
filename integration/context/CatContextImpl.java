@@ -7,10 +7,11 @@ import java.util.Map;
 
 /**
  * Cat.context接口实现类，用于context调用链传递，相关方法Cat.logRemoteCall()和Cat.logRemoteServer()
+ *
  * @author soar
  * @date 2019-01-10
  */
-public class CatContextImpl implements Cat.Context{
+public class CatContextImpl implements Cat.Context {
 
     private Map<String, String> properties = new HashMap<>(16);
 

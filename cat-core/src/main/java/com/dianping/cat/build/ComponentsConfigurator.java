@@ -18,12 +18,6 @@
  */
 package com.dianping.cat.build;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.unidal.dal.jdbc.configuration.AbstractJdbcResourceConfigurator;
-import org.unidal.lookup.configuration.Component;
 import com.dianping.cat.CatConstants;
 import com.dianping.cat.CatCoreModule;
 import com.dianping.cat.analysis.DefaultMessageAnalyzerManager;
@@ -50,6 +44,12 @@ import com.dianping.cat.service.IpService;
 import com.dianping.cat.service.IpService2;
 import com.dianping.cat.statistic.ServerStatisticManager;
 import com.dianping.cat.task.TaskManager;
+import org.unidal.dal.jdbc.configuration.AbstractJdbcResourceConfigurator;
+import org.unidal.lookup.configuration.Component;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class ComponentsConfigurator extends AbstractJdbcResourceConfigurator {
 	public static void main(String[] args) {

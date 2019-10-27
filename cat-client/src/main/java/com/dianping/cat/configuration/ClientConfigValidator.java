@@ -18,13 +18,13 @@
  */
 package com.dianping.cat.configuration;
 
-import java.text.MessageFormat;
-import java.util.Date;
-
 import com.dianping.cat.configuration.client.entity.ClientConfig;
 import com.dianping.cat.configuration.client.entity.Domain;
 import com.dianping.cat.configuration.client.entity.Server;
 import com.dianping.cat.configuration.client.transform.DefaultValidator;
+
+import java.text.MessageFormat;
+import java.util.Date;
 
 public class ClientConfigValidator extends DefaultValidator {
 	private ClientConfig m_config;

@@ -42,7 +42,7 @@ public enum Action implements org.unidal.web.mvc.Action {
 
 	private String m_name;
 
-	private Action(String name) {
+    Action(String name) {
 		m_name = name;
 	}
 

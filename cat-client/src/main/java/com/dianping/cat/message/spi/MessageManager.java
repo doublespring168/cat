@@ -29,7 +29,7 @@ import com.dianping.cat.message.Transaction;
 	* Notes: This method is reserved for internal usage only. Application developer should never call this method directly.
 	*/
 public interface MessageManager {
-	public void add(Message message);
+    void add(Message message);
 
 	/**
 		* Be triggered when a transaction ends, whatever it's the root transaction or nested transaction. However, if it's
@@ -38,64 +38,64 @@ public interface MessageManager {
 		*
 		* @param transaction
 		*/
-	public void end(Transaction transaction);
+    void end(Transaction transaction);
 
 	/**
 		* Get peek transaction for current thread.
 		*
 		* @return peek transaction for current thread, null if no transaction there.
 		*/
-	public Transaction getPeekTransaction();
+    Transaction getPeekTransaction();
 
 	/**
 		* Get thread local message information.
 		*
 		* @return message tree, null means current thread is not setup correctly.
 		*/
-	public MessageTree getThreadLocalMessageTree();
+    MessageTree getThreadLocalMessageTree();
 
 	/**
 		* Check if the thread context is setup or not.
 		*
 		* @return true if the thread context is setup, false otherwise
 		*/
-	public boolean hasContext();
+    boolean hasContext();
 
 	/**
 		* Check if current context logging is enabled or disabled.
 		*
 		* @return true if current context is enabled
 		*/
-	public boolean isMessageEnabled();
+    boolean isMessageEnabled();
 
 	/**
 		* Check if CAT logging is enabled or disabled.
 		*
 		* @return true if CAT is enabled
 		*/
-	public boolean isCatEnabled();
+    boolean isCatEnabled();
 
 	/**
 		* Check if CAT trace mode is enabled or disabled.
 		*
 		* @return true if CAT is trace mode
 		*/
-	public boolean isTraceMode();
+    boolean isTraceMode();
 
 	/**
 		* Set CAT trace mode.
 		*/
-	public void setTraceMode(boolean traceMode);
+    void setTraceMode(boolean traceMode);
 
 	/**
 		* Do cleanup for current thread environment in order to release resources in thread local objects.
 		*/
-	public void reset();
+    void reset();
 
 	/**
 		* Do setup for current thread environment in order to prepare thread local objects.
 		*/
-	public void setup();
+    void setup();
 
 	/**
 		* Be triggered when a new transaction starts, whatever it's the root transaction or nested transaction.
@@ -103,7 +103,7 @@ public interface MessageManager {
 		* @param transaction
 		* @param forked
 		*/
-	public void start(Transaction transaction, boolean forked);
+    void start(Transaction transaction, boolean forked);
 
 	/**
 		* Binds the current message tree to the transaction tagged with <code>tag</code>.
@@ -111,13 +111,13 @@ public interface MessageManager {
 		* @param tag   tag name of the tagged transaction
 		* @param title title shown in the logview
 		*/
-	public void bind(String tag, String title);
+    void bind(String tag, String title);
 
 	/**
 		* get domain
 		*/
-	public String getDomain();
+    String getDomain();
 
-	public ClientConfigManager getConfigManager();
+    ClientConfigManager getConfigManager();
 
 }

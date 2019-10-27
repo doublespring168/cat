@@ -57,7 +57,7 @@ public enum JspFile {
 
 	private String m_path;
 
-	private JspFile(String path) {
+    JspFile(String path) {
 		m_path = path;
 	}
 

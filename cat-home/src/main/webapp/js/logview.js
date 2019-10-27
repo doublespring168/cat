@@ -1,36 +1,36 @@
 function show(anchor, id) {
-	var cell = document.getElementById(id);
-	var text = anchor.innerHTML;
-	
-	if (!anchor.originalHTML) {
-		anchor.originalHTML = anchor.innerHTML;
-	}
-	
-	if (text != '[:: hide ::]') {
-		anchor.innerHTML = '[:: hide ::]';
+    var cell = document.getElementById(id);
+    var text = anchor.innerHTML;
 
-		$.ajax({
-			type : "get",
-			url : anchor.href + "?header=no&waterfall=false&map=true",
-			success : function(data, textStatus) {
-				cell.innerHTML = data;
-			}
-		});
+    if (!anchor.originalHTML) {
+        anchor.originalHTML = anchor.innerHTML;
+    }
 
-		cell.style.display = 'block';
-	} else {
-		anchor.innerHTML = anchor.originalHTML;
-		cell.style.display = 'none';
-	}
+    if (text != '[:: hide ::]') {
+        anchor.innerHTML = '[:: hide ::]';
 
-	return false;
+        $.ajax({
+            type: "get",
+            url: anchor.href + "?header=no&waterfall=false&map=true",
+            success: function (data, textStatus) {
+                cell.innerHTML = data;
+            }
+        });
+
+        cell.style.display = 'block';
+    } else {
+        anchor.innerHTML = anchor.originalHTML;
+        cell.style.display = 'none';
+    }
+
+    return false;
 }
 
 function popup(id) {
-	var url = window.location.href;
-	var p2 = url.indexOf("?");
-	var p1 = url.lastIndexOf("/", p2);
-	var newUrl = url.substring(0, p1 + 1) + id + url.substring(p2);
+    var url = window.location.href;
+    var p2 = url.indexOf("?");
+    var p1 = url.lastIndexOf("/", p2);
+    var newUrl = url.substring(0, p1 + 1) + id + url.substring(p2);
 
-	window.open(newUrl, id);
+    window.open(newUrl, id);
 }

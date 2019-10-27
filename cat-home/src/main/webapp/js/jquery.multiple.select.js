@@ -11,16 +11,18 @@
 
     function MultipleSelect($el, options) {
         var that = this,
-            name = $el.attr('name') || options.name || ''
+            name = $el.attr('name') || options.name || '';
 
         $el.parent().hide();
         var elWidth = $el.css("width");
         $el.parent().show();
-        if (elWidth=="0px") {elWidth = $el.outerWidth()+20}
+        if (elWidth == "0px") {
+            elWidth = $el.outerWidth() + 20
+        }
 
         this.$el = $el.hide();
         this.options = options;
-        this.$parent = $('<div' + $.map(['class', 'title'],function (att) {
+        this.$parent = $('<div' + $.map(['class', 'title'], function (att) {
             var attValue = that.$el.attr(att) || '';
             attValue = (att === 'class' ? ('ms-parent' + (attValue ? ' ' : '')) : '') + attValue;
             return attValue ? (' ' + att + '="' + attValue + '"') : '';
@@ -141,10 +143,10 @@
                         '<li' + clss + style + '>',
                         '<label' + (disabled ? ' class="disabled"' : '') + '>',
                         '<input type="' + type + '" ' + this.selectItemName + ' value="' + value + '"' +
-                            (selected ? ' checked="checked"' : '') +
-                            (disabled ? ' disabled="disabled"' : '') +
-                            (group ? ' data-group="' + group + '"' : '') +
-                            '/> ',
+                        (selected ? ' checked="checked"' : '') +
+                        (disabled ? ' disabled="disabled"' : '') +
+                        (group ? ' data-group="' + group + '"' : '') +
+                        '/> ',
                         text,
                         '</label>',
                         '</li>'
@@ -203,22 +205,22 @@
                         break;
                 }
             });
-            this.$searchInput.off('keydown').on('keydown',function (e) {
+            this.$searchInput.off('keydown').on('keydown', function (e) {
                 if (e.keyCode === 9 && e.shiftKey) { // Ensure shift-tab causes lost focus from filter as with clicking away
                     that.close();
                 }
             }).off('keyup').on('keyup', function (e) {
-                    if (that.options.filterAcceptOnEnter &&
-                        (e.which === 13 || e.which == 32) && // enter or space
-                        that.$searchInput.val() // Avoid selecting/deselecting if no choices made
-                        ) {
-                        that.$selectAll.click();
-                        that.close();
-                        that.focus();
-                        return;
-                    }
-                    that.filter();
-                });
+                if (that.options.filterAcceptOnEnter &&
+                    (e.which === 13 || e.which == 32) && // enter or space
+                    that.$searchInput.val() // Avoid selecting/deselecting if no choices made
+                ) {
+                    that.$selectAll.click();
+                    that.close();
+                    that.focus();
+                    return;
+                }
+                that.filter();
+            });
             this.$selectAll.off('click').on('click', function () {
                 var checked = $(this).prop('checked'),
                     $items = that.$selectItems.filter(':visible');
@@ -282,7 +284,7 @@
             if (this.options.container) {
                 var offset = this.$drop.offset();
                 this.$drop.appendTo($(this.options.container));
-                this.$drop.offset({ top: offset.top, left: offset.left });
+                this.$drop.offset({top: offset.top, left: offset.left});
             }
             if (this.options.filter) {
                 this.$searchInput.val('');
@@ -322,8 +324,7 @@
             } else if ((this.options.countSelected || this.options.etcaetera) && selects.length > this.options.minimumCountSelected) {
                 if (this.options.etcaetera) {
                     $span.removeClass('placeholder').html((this.options.displayValues ? selects : this.getSelects('text').slice(0, this.options.minimumCountSelected)).join(this.options.delimiter) + '...');
-                }
-                else {
+                } else {
                     $span.removeClass('placeholder').html(this.options.countSelected
                         .replace('#', selects.length)
                         .replace('%', this.$selectItems.length + this.$disableItems.length));
@@ -350,7 +351,9 @@
 
         updateSelectAll: function (Init) {
             var $items = this.$selectItems;
-            if (!Init) { $items = $items.filter(':visible'); }
+            if (!Init) {
+                $items = $items.filter(':visible');
+            }
             this.$selectAll.prop('checked', $items.length &&
                 $items.length === $items.filter(':checked').length);
             if (this.$selectAll.prop('checked')) {

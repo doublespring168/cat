@@ -18,11 +18,7 @@
  */
 package com.dianping.cat.config.server;
 
-import com.dianping.cat.configuration.server.entity.ConsumerConfig;
-import com.dianping.cat.configuration.server.entity.LongConfig;
-import com.dianping.cat.configuration.server.entity.Server;
-import com.dianping.cat.configuration.server.entity.ServerConfig;
-import com.dianping.cat.configuration.server.entity.StorageConfig;
+import com.dianping.cat.configuration.server.entity.*;
 import com.dianping.cat.configuration.server.transform.DefaultValidator;
 
 public class ServerConfigValidator extends DefaultValidator {

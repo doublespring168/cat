@@ -18,19 +18,18 @@
  */
 package com.dianping.cat.message.codec;
 
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
-
-import io.netty.buffer.ByteBuf;
-import org.unidal.helper.Splitters;
-
 import com.dianping.cat.message.Event;
 import com.dianping.cat.message.Message;
 import com.dianping.cat.message.Transaction;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.message.spi.codec.BufferWriter;
+import io.netty.buffer.ByteBuf;
+import org.unidal.helper.Splitters;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 
 public class WaterfallMessageCodec {
 
@@ -493,13 +492,9 @@ public class WaterfallMessageCodec {
 
 			byte[] data;
 
-			try {
-				data = str.getBytes("utf-8");
-			} catch (UnsupportedEncodingException e) {
-				data = str.getBytes();
-			}
+            data = str.getBytes(StandardCharsets.UTF_8);
 
-			return m_writer.writeTo(buf, data);
+            return m_writer.writeTo(buf, data);
 		}
 	}
 
@@ -554,7 +549,7 @@ public class WaterfallMessageCodec {
 				}
 			}
 
-			m_last.push(root ? true : false);
+            m_last.push(root);
 			m_level++;
 		}
 

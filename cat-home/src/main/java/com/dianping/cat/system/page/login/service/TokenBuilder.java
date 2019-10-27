@@ -18,10 +18,10 @@
  */
 package com.dianping.cat.system.page.login.service;
 
+import com.dianping.cat.system.page.login.spi.ITokenBuilder;
+
 import java.io.UnsupportedEncodingException;
 import java.util.regex.Pattern;
-
-import com.dianping.cat.system.page.login.spi.ITokenBuilder;
 
 public class TokenBuilder implements ITokenBuilder<SigninContext, Token> {
 	private static final String SP = "|";

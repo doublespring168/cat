@@ -142,35 +142,35 @@ public interface MessageProducer {
 		*
 		* @return new message id
 		*/
-	public String createRpcServerId(String domain);
+    String createRpcServerId(String domain);
 
 	/**
 		* Create a new message id.
 		*
 		* @return new message id
 		*/
-	public String createMessageId();
+    String createMessageId();
 
 	/**
 		* Check if the CAT client is enabled for current domain.
 		*
 		* @return true if CAT client is enabled, false means CAT client is disabled.
 		*/
-	public boolean isEnabled();
+    boolean isEnabled();
 
 	/**
 		* Log an error.
 		*
 		* @param cause root cause exception
 		*/
-	public void logError(String message, Throwable cause);
+    void logError(String message, Throwable cause);
 
 	/**
 		* Log an error.
 		*
 		* @param cause root cause exception
 		*/
-	public void logError(Throwable cause);
+    void logError(Throwable cause);
 
 	/**
 		* Log an event in one shot with SUCCESS status.
@@ -178,7 +178,7 @@ public interface MessageProducer {
 		* @param type event type
 		* @param name event name
 		*/
-	public void logEvent(String type, String name);
+    void logEvent(String type, String name);
 
 	/**
 		* Log an event in one shot.
@@ -188,7 +188,7 @@ public interface MessageProducer {
 		* @param status         "0" means success, otherwise means error code
 		* @param nameValuePairs name value pairs in the format of "a=1&b=2&..."
 		*/
-	public void logEvent(String type, String name, String status, String nameValuePairs);
+    void logEvent(String type, String name, String status, String nameValuePairs);
 
 	/**
 		* Log a heartbeat in one shot.
@@ -198,7 +198,7 @@ public interface MessageProducer {
 		* @param status         "0" means success, otherwise means error code
 		* @param nameValuePairs name value pairs in the format of "a=1&b=2&..."
 		*/
-	public void logHeartbeat(String type, String name, String status, String nameValuePairs);
+    void logHeartbeat(String type, String name, String status, String nameValuePairs);
 
 	/**
 		* Log a metric in one shot.
@@ -207,7 +207,7 @@ public interface MessageProducer {
 		* @param status         "0" means success, otherwise means error code
 		* @param nameValuePairs name value pairs in the format of "a=1&b=2&..."
 		*/
-	public void logMetric(String name, String status, String nameValuePairs);
+    void logMetric(String name, String status, String nameValuePairs);
 
 	/**
 		* Log an trace in one shot with SUCCESS status.
@@ -215,7 +215,7 @@ public interface MessageProducer {
 		* @param type trace type
 		* @param name trace name
 		*/
-	public void logTrace(String type, String name);
+    void logTrace(String type, String name);
 
 	/**
 		* Log an trace in one shot.
@@ -225,7 +225,7 @@ public interface MessageProducer {
 		* @param status         "0" means success, otherwise means error code
 		* @param nameValuePairs name value pairs in the format of "a=1&b=2&..."
 		*/
-	public void logTrace(String type, String name, String status, String nameValuePairs);
+    void logTrace(String type, String name, String status, String nameValuePairs);
 
 	/**
 		* Create a new event with given type and name.
@@ -233,7 +233,7 @@ public interface MessageProducer {
 		* @param type event type
 		* @param name event name
 		*/
-	public Event newEvent(String type, String name);
+    Event newEvent(String type, String name);
 
 	/**
 		* Create a forked transaction for child thread.
@@ -242,7 +242,7 @@ public interface MessageProducer {
 		* @param name transaction name
 		* @return forked transaction
 		*/
-	public ForkedTransaction newForkedTransaction(String type, String name);
+    ForkedTransaction newForkedTransaction(String type, String name);
 
 	/**
 		* Create a new heartbeat with given type and name.
@@ -250,7 +250,7 @@ public interface MessageProducer {
 		* @param type heartbeat type
 		* @param name heartbeat name
 		*/
-	public Heartbeat newHeartbeat(String type, String name);
+    Heartbeat newHeartbeat(String type, String name);
 
 	/**
 		* Create a new metric with given type and name.
@@ -258,7 +258,7 @@ public interface MessageProducer {
 		* @param type metric type
 		* @param name metric name
 		*/
-	public Metric newMetric(String type, String name);
+    Metric newMetric(String type, String name);
 
 	/**
 		* Create a tagged transaction for another process or thread.
@@ -268,7 +268,7 @@ public interface MessageProducer {
 		* @param tag  tag applied to the transaction
 		* @return tagged transaction
 		*/
-	public TaggedTransaction newTaggedTransaction(String type, String name, String tag);
+    TaggedTransaction newTaggedTransaction(String type, String name, String tag);
 
 	/**
 		* Create a new trace with given type and name.
@@ -276,7 +276,7 @@ public interface MessageProducer {
 		* @param type trace type
 		* @param name trace name
 		*/
-	public Trace newTrace(String type, String name);
+    Trace newTrace(String type, String name);
 
 	/**
 		* Create a new transaction with given type and name.
@@ -284,5 +284,5 @@ public interface MessageProducer {
 		* @param type transaction type
 		* @param name transaction name
 		*/
-	public Transaction newTransaction(String type, String name);
+    Transaction newTransaction(String type, String name);
 }

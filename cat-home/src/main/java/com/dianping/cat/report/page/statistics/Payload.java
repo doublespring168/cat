@@ -18,15 +18,14 @@
  */
 package com.dianping.cat.report.page.statistics;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import org.unidal.web.mvc.ActionContext;
-import org.unidal.web.mvc.payload.annotation.FieldMeta;
-
 import com.dianping.cat.helper.TimeHelper;
 import com.dianping.cat.mvc.AbstractReportPayload;
 import com.dianping.cat.report.ReportPage;
+import org.unidal.web.mvc.ActionContext;
+import org.unidal.web.mvc.payload.annotation.FieldMeta;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class Payload extends AbstractReportPayload<Action, ReportPage> {
 	private ReportPage m_page;

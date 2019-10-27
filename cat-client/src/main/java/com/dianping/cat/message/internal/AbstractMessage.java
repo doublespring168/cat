@@ -18,13 +18,12 @@
  */
 package com.dianping.cat.message.internal;
 
-import java.nio.charset.Charset;
-
+import com.dianping.cat.message.Message;
+import com.dianping.cat.message.spi.codec.PlainTextMessageCodec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
-import com.dianping.cat.message.Message;
-import com.dianping.cat.message.spi.codec.PlainTextMessageCodec;
+import java.nio.charset.Charset;
 
 public abstract class AbstractMessage implements Message {
 	protected String m_status = "unset";

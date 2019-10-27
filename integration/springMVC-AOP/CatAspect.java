@@ -16,7 +16,7 @@ public class CatAspect {
     @Around("@annotation(catTransaction)")
     public Object catTransactionProcess(ProceedingJoinPoint pjp, CatTransaction catTransaction) throws Throwable {
         String transName = pjp.getSignature().getDeclaringType().getSimpleName() + "." + pjp.getSignature().getName();
-        if(StringUtils.isNotBlank(catTransaction.name())){
+        if (StringUtils.isNotBlank(catTransaction.name())) {
             transName = catTransaction.name();
         }
         Transaction t = Cat.newTransaction(catTransaction.type(), transName);
@@ -27,18 +27,18 @@ public class CatAspect {
         } catch (Throwable e) {
             t.setStatus(e);
             throw e;
-        }finally{
+        } finally {
             t.complete();
         }
     }
-    
+
     @Around("@annotation(catCacheTransaction)")
     public Object catCacheTransactionProcess(ProceedingJoinPoint pjp, CatCacheTransaction catCacheTransaction) throws Throwable {
         String transName = pjp.getSignature().getName();
-        if(StringUtils.isNotBlank(catCacheTransaction.name())){
+        if (StringUtils.isNotBlank(catCacheTransaction.name())) {
             transName = catCacheTransaction.name();
         }
-        Transaction t = Cat.newTransaction("Cache.Redis",transName);
+        Transaction t = Cat.newTransaction("Cache.Redis", transName);
         try {
             Cat.logEvent("Cache.Server", catCacheTransaction.server());
             Object result = pjp.proceed();
@@ -48,18 +48,18 @@ public class CatAspect {
             Cat.logEvent("Cache.Server", catCacheTransaction.server(), "-1", null);
             t.setStatus(e);
             throw e;
-        }finally{
+        } finally {
             t.complete();
         }
     }
-    
+
     @Around("@annotation(catDubboClientTransaction)")
     public Object catDubboServerTransactionProcess(ProceedingJoinPoint pjp, CatDubboClientTransaction catDubboClientTransaction) throws Throwable {
         String transName = pjp.getSignature().getName();
-        if(StringUtils.isNotBlank(catDubboClientTransaction.name())){
+        if (StringUtils.isNotBlank(catDubboClientTransaction.name())) {
             transName = catDubboClientTransaction.name();
         }
-        Transaction t = Cat.newTransaction("Call",transName);
+        Transaction t = Cat.newTransaction("Call", transName);
         try {
             Cat.logEvent("Call.app", catDubboClientTransaction.callApp());
             Cat.logEvent("Call.server", catDubboClientTransaction.callServer());
@@ -69,7 +69,7 @@ public class CatAspect {
         } catch (Throwable e) {
             t.setStatus(e);
             throw e;
-        }finally{
+        } finally {
             t.complete();
         }
     }
@@ -77,7 +77,7 @@ public class CatAspect {
     @After("@annotation(catHttpRequestTransaction)")
     public void catHttpRequestProcess(CatHttpRequestTransaction catHttpRequestTransaction) {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        if(StringUtils.isNotBlank(catHttpRequestTransaction.name())){
+        if (StringUtils.isNotBlank(catHttpRequestTransaction.name())) {
             String transName = catHttpRequestTransaction.name();
             request.setAttribute("cat-page-uri", transName);
         }

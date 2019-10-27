@@ -18,28 +18,17 @@
  */
 package com.dianping.cat.message.codec;
 
-import java.io.UnsupportedEncodingException;
+import com.dianping.cat.message.*;
+import com.dianping.cat.message.spi.MessageTree;
+import com.dianping.cat.message.spi.codec.BufferWriter;
+import io.netty.buffer.ByteBuf;
+
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-
-import io.netty.buffer.ByteBuf;
-
-import com.dianping.cat.message.Event;
-import com.dianping.cat.message.Heartbeat;
-import com.dianping.cat.message.Message;
-import com.dianping.cat.message.Metric;
-import com.dianping.cat.message.Trace;
-import com.dianping.cat.message.Transaction;
-import com.dianping.cat.message.spi.MessageTree;
-import com.dianping.cat.message.spi.codec.BufferWriter;
 
 public class HtmlMessageCodec {
 
@@ -333,7 +322,7 @@ public class HtmlMessageCodec {
 		m_logViewPrefix = logViewPrefix;
 	}
 
-	protected static enum Policy {
+    protected enum Policy {
 		DEFAULT,
 
 		WITHOUT_STATUS,
@@ -498,13 +487,9 @@ public class HtmlMessageCodec {
 
 			byte[] data;
 
-			try {
-				data = str.getBytes("utf-8");
-			} catch (UnsupportedEncodingException e) {
-				data = str.getBytes();
-			}
+            data = str.getBytes(StandardCharsets.UTF_8);
 
-			return m_writer.writeTo(buf, data);
+            return m_writer.writeTo(buf, data);
 		}
 	}
 

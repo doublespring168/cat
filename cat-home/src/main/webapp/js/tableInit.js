@@ -1,8 +1,8 @@
-function initTable(table){
-	table.dataTable({
-		"sPaginationType": "full_numbers",
-		'iDisplayLength': 100,
-		"oLanguage": {
+function initTable(table) {
+    table.dataTable({
+        "sPaginationType": "full_numbers",
+        'iDisplayLength': 100,
+        "oLanguage": {
             "sProcessing": "正在加载中......",
             "bFilter": false,
             "bInfo": false,
@@ -19,14 +19,14 @@ function initTable(table){
                 "sLast": "末页"
             }
         }
-	});
+    });
 }
 
-function init(){
-	$('#contents').dataTable({
-		"sPaginationType": "full_numbers",
-		'iDisplayLength': 50,
-		"oLanguage": {
+function init() {
+    $('#contents').dataTable({
+        "sPaginationType": "full_numbers",
+        'iDisplayLength': 50,
+        "oLanguage": {
             "sProcessing": "正在加载中......",
             "sLengthMenu": "每页显示 _MENU_ 条记录",
             "sZeroRecords": "对不起，查询不到相关数据！",
@@ -41,5 +41,5 @@ function init(){
                 "sLast": "末页"
             }
         }
-	});
+    });
 }

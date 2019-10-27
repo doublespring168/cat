@@ -18,12 +18,6 @@
  */
 package com.dianping.cat.build;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.unidal.lookup.configuration.AbstractResourceConfigurator;
-import org.unidal.lookup.configuration.Component;
-
 import com.dianping.cat.CatClientModule;
 import com.dianping.cat.configuration.DefaultClientConfigManager;
 import com.dianping.cat.message.internal.DefaultMessageManager;
@@ -33,6 +27,11 @@ import com.dianping.cat.message.io.DefaultTransportManager;
 import com.dianping.cat.message.io.TcpSocketSender;
 import com.dianping.cat.message.spi.internal.DefaultMessageStatistics;
 import com.dianping.cat.status.StatusUpdateTask;
+import org.unidal.lookup.configuration.AbstractResourceConfigurator;
+import org.unidal.lookup.configuration.Component;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ComponentsConfigurator extends AbstractResourceConfigurator {
 	public static void main(String[] args) {

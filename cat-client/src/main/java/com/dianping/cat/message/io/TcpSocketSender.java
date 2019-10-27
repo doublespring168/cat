@@ -18,22 +18,6 @@
  */
 package com.dianping.cat.message.io;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
-
-import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.codehaus.plexus.logging.LogEnabled;
-import org.codehaus.plexus.logging.Logger;
-import org.unidal.helper.Threads;
-import org.unidal.helper.Threads.Task;
-import org.unidal.lookup.annotation.Inject;
-import org.unidal.lookup.annotation.Named;
-
 import com.dianping.cat.ApplicationSettings;
 import com.dianping.cat.analyzer.LocalAggregator;
 import com.dianping.cat.configuration.ClientConfigManager;
@@ -45,9 +29,22 @@ import com.dianping.cat.message.spi.MessageQueue;
 import com.dianping.cat.message.spi.MessageStatistics;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.message.spi.codec.NativeMessageCodec;
-import com.dianping.cat.message.spi.internal.DefaultMessageTree;
 import com.dianping.cat.status.StatusExtension;
 import com.dianping.cat.status.StatusExtensionRegister;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
+import org.codehaus.plexus.logging.LogEnabled;
+import org.codehaus.plexus.logging.Logger;
+import org.unidal.helper.Threads;
+import org.unidal.helper.Threads.Task;
+import org.unidal.lookup.annotation.Inject;
+import org.unidal.lookup.annotation.Named;
+
+import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Named
 public class TcpSocketSender implements Task, MessageSender, LogEnabled {
@@ -164,7 +161,7 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 			tran.addChild(tree.getMessage());
 			max--;
 		}
-		((DefaultMessageTree) first).setMessage(tran);
+        first.setMessage(tran);
 		return first;
 	}
 
@@ -298,9 +295,7 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 		if (tree != null) {
 			long firstTime = tree.getMessage().getTimestamp();
 
-			if (System.currentTimeMillis() - firstTime > MAX_DURATION || queue.size() >= MAX_CHILD_NUMBER) {
-				return true;
-			}
+            return System.currentTimeMillis() - firstTime > MAX_DURATION || queue.size() >= MAX_CHILD_NUMBER;
 		}
 		return false;
 	}

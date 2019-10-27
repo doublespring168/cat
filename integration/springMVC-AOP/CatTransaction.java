@@ -7,5 +7,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface CatTransaction {
     String type() default "Handler";//"URL MVC Service SQL" is reserved for Cat Transaction Type
+
     String name() default "";
 }

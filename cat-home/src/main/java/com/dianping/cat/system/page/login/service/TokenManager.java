@@ -18,9 +18,8 @@
  */
 package com.dianping.cat.system.page.login.service;
 
-import org.unidal.lookup.annotation.Inject;
-
 import com.dianping.cat.system.page.login.spi.ITokenManager;
+import org.unidal.lookup.annotation.Inject;
 
 public class TokenManager implements ITokenManager<SigninContext, Token> {
 	@Inject

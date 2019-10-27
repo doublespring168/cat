@@ -8,11 +8,7 @@ import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ParameterMapping;
-import org.apache.ibatis.plugin.Interceptor;
-import org.apache.ibatis.plugin.Intercepts;
-import org.apache.ibatis.plugin.Invocation;
-import org.apache.ibatis.plugin.Plugin;
-import org.apache.ibatis.plugin.Signature;
+import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
@@ -77,19 +73,6 @@ public class CatMybatisInterceptor implements Interceptor {
         return showSql(configuration, boundSql);
     }
 
-    private static String getParameterValue(Object obj) {
-        StringBuilder retStringBuilder = new StringBuilder();
-        if (obj instanceof String) {
-            retStringBuilder.append("'").append(obj).append("'");
-        } else if (obj instanceof Date) {
-            DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.CHINA);
-            retStringBuilder.append("'").append(formatter.format(new Date())).append("'");
-        } else {
-            retStringBuilder.append("'").append(obj == null ? "" : obj).append("'");
-        }
-        return retStringBuilder.toString();
-    }
-
     public static String showSql(Configuration configuration, BoundSql boundSql) {
         Object parameterObject = boundSql.getParameterObject();
         List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
@@ -120,6 +103,19 @@ public class CatMybatisInterceptor implements Interceptor {
             }
         }
         return sqlBuilder.toString();
+    }
+
+    private static String getParameterValue(Object obj) {
+        StringBuilder retStringBuilder = new StringBuilder();
+        if (obj instanceof String) {
+            retStringBuilder.append("'").append(obj).append("'");
+        } else if (obj instanceof Date) {
+            DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.CHINA);
+            retStringBuilder.append("'").append(formatter.format(new Date())).append("'");
+        } else {
+            retStringBuilder.append("'").append(obj == null ? "" : obj).append("'");
+        }
+        return retStringBuilder.toString();
     }
 
     public Object plugin(Object target) {

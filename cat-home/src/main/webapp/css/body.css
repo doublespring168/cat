@@ -1,248 +1,267 @@
 .current {
-	background-color: #3CB371;
+    background-color: #3CB371;
 }
 
-table{
-	font-size:14px;
+table {
+    font-size: 14px;
 }
 
-.machines th{
-	font-size:14px;
+.machines th {
+    font-size: 14px;
 }
 
-th{
-	word-break: break-all;
+th {
+    word-break: break-all;
 }
-td{
-	word-break: break-all;c
-	padding-left:3px;
+
+td {
+    word-break: break-all;
+    c padding-left: 3px;
 }
 
 a.error {
-	background-color: red;
+    background-color: red;
 }
 
 a.failure {
-	background-color: #770000;
+    background-color: #770000;
 }
 
 a.long-url {
-	background-color: blue;
+    background-color: blue;
 }
 
 a.long-url {
-	background-color: #5599CC;
+    background-color: #5599CC;
 }
 
 a.long-sql {
-	background-color: #6699CC;
+    background-color: #6699CC;
 }
 
 a.long-call {
-	background-color: #6688BB;
+    background-color: #6688BB;
 }
 
 a.long-cache {
-	background-color: #6677AA;
+    background-color: #6677AA;
 }
 
 a.url {
-	background-color: #cc0000;
+    background-color: #cc0000;
 }
 
-a.long-service{
-	background-color: #9966dd;
+a.long-service {
+    background-color: #9966dd;
 }
 
 a.sql {
-	background-color: purple;
+    background-color: purple;
 }
 
 a.call {
-	background-color: #9966ff;
+    background-color: #9966ff;
 }
 
 a.PigeonCall {
-	background-color: #9966ff;
+    background-color: #9966ff;
 }
 
 a.cache {
-	background-color: #aa3faa;
+    background-color: #aa3faa;
 }
 
 a.heartbeat {
-	background-color: #009933;
+    background-color: #009933;
 }
 
 .detail {
-	border-spacing: 1px;
+    border-spacing: 1px;
 }
 
 .top {
-	vertical-align: top;
+    vertical-align: top;
 }
 
 #msgObjRef {
-	position: absolute;
-	text-align: center;
-	border: 1px solid;
-	border-color: #666699;
-	background-color: #FFFFFF;
-	line-height: 22px;
-	z-index: 102;
+    position: absolute;
+    text-align: center;
+    border: 1px solid;
+    border-color: #666699;
+    background-color: #FFFFFF;
+    line-height: 22px;
+    z-index: 102;
 }
 
 #titleBar {
-	text-align: left;
-	color: #FFFFFF;
-	cursor: move;
-	background-color: #06C;
+    text-align: left;
+    color: #FFFFFF;
+    cursor: move;
+    background-color: #06C;
 }
 
 #closeBtn {
-	width: 10px;
-	cursor: pointer;
-	background-color: #06C;
+    width: 10px;
+    cursor: pointer;
+    background-color: #06C;
 }
 
 .version {
-	text-align: left;
-	width: 80%;
-	border-radius: 6px;
-	display: table;
-	border-collapse: separate;
-	border-spacing: 2px;
+    text-align: left;
+    width: 80%;
+    border-radius: 6px;
+    display: table;
+    border-collapse: separate;
+    border-spacing: 2px;
 }
 
 .left {
-	text-align: left;
+    text-align: left;
 }
 
 .right {
-	text-align: right;
+    text-align: right;
 }
 
 .center {
-	text-align: center;
+    text-align: center;
 }
-.breadcrumbs{
-	font-size:14px;
+
+.breadcrumbs {
+    font-size: 14px;
 }
 
 .department {
-	text-align: left;
-	font-size:14px;
-	width: 100px;
+    text-align: left;
+    font-size: 14px;
+    width: 100px;
 }
 
-.machines{
-	margin-top:5px;
-	margin-bottom:5px;
+.machines {
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
 
 .longText {
-	text-align: left;
-	white-space: normal;
-	word-wrap: break-word;
-	word-break: break-all;
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-all;
 }
 
 .required {
-	color: red;
+    color: red;
 }
 
 .graph {
-	width: 450px;
-	height: 300px;
-	margin: 4px auto;
+    width: 450px;
+    height: 300px;
+    margin: 4px auto;
 }
 
 .metricGraph {
-	width: 400px;
-	height: 250px;
+    width: 400px;
+    height: 250px;
 }
 
 .pieChart {
-	text-align: left;
-	width: 1000px;
-	height: 400px;
-	margin: 4px auto;
+    text-align: left;
+    width: 1000px;
+    height: 400px;
+    margin: 4px auto;
 }
 
 .error {
-	color: red;
+    color: red;
 }
 
 .dashboard {
-	background: url('../img/checked.gif') no-repeat;
+    background: url('../img/checked.gif') no-repeat;
 }
 
-select{
-	margin-bottom:0px;
-}
-ul, ol{
-	margin:0 0 10px 25px;
+select {
+    margin-bottom: 0px;
 }
 
-#loginModal .form-horizontal .control-label{
-	width:50px;
+ul, ol {
+    margin: 0 0 10px 25px;
 }
-#loginModal .form-horizontal .controls{
-	margin-left:70px;
+
+#loginModal .form-horizontal .control-label {
+    width: 50px;
 }
-.aleration_puppet{
-	background:#F0FFFF;
+
+#loginModal .form-horizontal .controls {
+    margin-left: 70px;
 }
-.aleration_lazyman{
-	background:#F5F5DC;
+
+.aleration_puppet {
+    background: #F0FFFF;
 }
-.aleration_workflow{
-	background:#87CEEB;
+
+.aleration_lazyman {
+    background: #F5F5DC;
 }
-.table-condensed th, .table-condensed td{
-padding: 2px 3px;
-vertical-align:middle;
+
+.aleration_workflow {
+    background: #87CEEB;
 }
-a{
-	color:rgb(0, 0, 238);
+
+.table-condensed th, .table-condensed td {
+    padding: 2px 3px;
+    vertical-align: middle;
 }
-.header{
-	margin-top:0px;
-	margin-bottom:0px;
+
+a {
+    color: rgb(0, 0, 238);
 }
-.user-info{
-	line-height:30px;
+
+.header {
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
-.sidebar{
-	width:148px;
+
+.user-info {
+    line-height: 30px;
 }
-.sidebar+.main-content{
-	margin-left:149px;
+
+.sidebar {
+    width: 148px;
 }
-.sidebar .sidebar-shortcuts-large>.btn{
-	width:70px;
-	height:30px;
+
+.sidebar + .main-content {
+    margin-left: 149px;
 }
-.checkbox input[type=checkbox], .checkbox-inline{
-	position:relative;
-	margin-left:0px;
+
+.sidebar .sidebar-shortcuts-large > .btn {
+    width: 70px;
+    height: 30px;
 }
-.nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover{
-	z-index:0;
+
+.checkbox input[type=checkbox], .checkbox-inline {
+    position: relative;
+    margin-left: 0px;
 }
-.input-group .form-control{
-	z-index:0;
+
+.nav-tabs > li.active > a, .nav-tabs > li.active > a:focus, .nav-tabs > li.active > a:hover {
+    z-index: 0;
 }
-table{
-	margin-top:3px;
+
+.input-group .form-control {
+    z-index: 0;
 }
+
+table {
+    margin-top: 3px;
+}
+
 .editor {
-     left: 0;
-     width: 100%;
-     height: 500px;
-     border-style:solid;
-     border-width: 1px;
-     border-color: lightgrey;
-     border-radius: 4px;
-     z-index: 0;
- }
+    left: 0;
+    width: 100%;
+    height: 500px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: lightgrey;
+    border-radius: 4px;
+    z-index: 0;
+}

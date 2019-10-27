@@ -18,10 +18,15 @@
  */
 package com.dianping.cat;
 
-import java.io.File;
-import java.text.MessageFormat;
-import java.util.Date;
-
+import com.dianping.cat.configuration.client.entity.ClientConfig;
+import com.dianping.cat.configuration.client.entity.Domain;
+import com.dianping.cat.configuration.client.entity.Server;
+import com.dianping.cat.message.*;
+import com.dianping.cat.message.internal.NullMessage;
+import com.dianping.cat.message.internal.NullMessageManager;
+import com.dianping.cat.message.internal.NullMessageProducer;
+import com.dianping.cat.message.spi.MessageManager;
+import com.dianping.cat.message.spi.MessageTree;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.unidal.helper.Files;
@@ -31,21 +36,9 @@ import org.unidal.initialization.ModuleContext;
 import org.unidal.initialization.ModuleInitializer;
 import org.unidal.lookup.ContainerLoader;
 
-import com.dianping.cat.configuration.client.entity.ClientConfig;
-import com.dianping.cat.configuration.client.entity.Domain;
-import com.dianping.cat.configuration.client.entity.Server;
-import com.dianping.cat.message.Event;
-import com.dianping.cat.message.ForkedTransaction;
-import com.dianping.cat.message.Heartbeat;
-import com.dianping.cat.message.MessageProducer;
-import com.dianping.cat.message.TaggedTransaction;
-import com.dianping.cat.message.Trace;
-import com.dianping.cat.message.Transaction;
-import com.dianping.cat.message.internal.NullMessage;
-import com.dianping.cat.message.internal.NullMessageManager;
-import com.dianping.cat.message.internal.NullMessageProducer;
-import com.dianping.cat.message.spi.MessageManager;
-import com.dianping.cat.message.spi.MessageTree;
+import java.io.File;
+import java.text.MessageFormat;
+import java.util.Date;
 
 /**
 	* This is the main entry point to the system.
@@ -557,16 +550,16 @@ public class Cat {
 		}
 	}
 
-	public static interface Context {
+    public interface Context {
 
-		public final String ROOT = "_catRootMessageId";
+        String ROOT = "_catRootMessageId";
 
-		public final String PARENT = "_catParentMessageId";
+        String PARENT = "_catParentMessageId";
 
-		public final String CHILD = "_catChildMessageId";
+        String CHILD = "_catChildMessageId";
 
-		public void addProperty(String key, String value);
+        void addProperty(String key, String value);
 
-		public String getProperty(String key);
+        String getProperty(String key);
 	}
 }

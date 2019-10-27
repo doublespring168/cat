@@ -7,5 +7,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface CatCacheTransaction {
     String name() default "";
+
     String server() default "Default";
 }

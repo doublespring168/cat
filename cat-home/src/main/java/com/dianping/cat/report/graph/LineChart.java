@@ -18,15 +18,10 @@
  */
 package com.dianping.cat.report.graph;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
 import com.dianping.cat.helper.JsonBuilder;
+
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class LineChart {
 

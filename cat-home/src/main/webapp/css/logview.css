@@ -1,43 +1,43 @@
 .logview {
-	width: auto;
+    width: auto;
 }
 
 .logview .nav {
-	font-size: small;
-	white-space: nowrap;
+    font-size: small;
+    white-space: nowrap;
 }
 
 tr.odd td {
-	background-color: #eee;
-	font-size: small;
-	white-space: nowrap;
-	vertical-align: top;
+    background-color: #eee;
+    font-size: small;
+    white-space: nowrap;
+    vertical-align: top;
 }
 
 tr.even td {
-	background-color: white;
-	font-size: small;
-	white-space: nowrap;
-	vertical-align: top;
+    background-color: white;
+    font-size: small;
+    white-space: nowrap;
+    vertical-align: top;
 }
 
 tr.link td {
-	font-size: small;
-	white-space: nowrap;
-	vertical-align: top;
+    font-size: small;
+    white-space: nowrap;
+    vertical-align: top;
 }
 
 .warn {
-	color: yellow;
+    color: yellow;
 }
 
 .error {
-	color: red;
+    color: red;
 }
 
 
-.header{
-	font-size: small;
-	white-space: nowrap;
-	color: white;
+.header {
+    font-size: small;
+    white-space: nowrap;
+    color: white;
 }

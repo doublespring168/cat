@@ -18,10 +18,9 @@
  */
 package com.dianping.cat.report.task;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.dianping.cat.Cat;
+import com.dianping.cat.core.dal.Task;
+import com.dianping.cat.task.TaskManager;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
@@ -29,9 +28,9 @@ import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationExce
 import org.unidal.lookup.ContainerHolder;
 import org.unidal.lookup.annotation.Named;
 
-import com.dianping.cat.Cat;
-import com.dianping.cat.core.dal.Task;
-import com.dianping.cat.task.TaskManager;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Named
 public class ReportFacade extends ContainerHolder implements LogEnabled, Initializable {
