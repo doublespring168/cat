@@ -45,6 +45,7 @@ public abstract class AbstractContainerServlet extends HttpServlet {
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
+
         try {
             if (m_container == null) {
                 m_container = ContainerLoader.getDefaultContainer();
