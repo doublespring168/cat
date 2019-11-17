@@ -1,5 +1,7 @@
 package org.unidal.initialization;
 
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLifecycleException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
@@ -25,6 +27,8 @@ public class DefaultModuleContext implements ModuleContext, Contextualizable {
     }
 
     public DefaultModuleContext(PlexusContainer container) {
+
+        LogUtil.info("实例化 DefaultModuleContext");
         m_container = container;
 
         setup();
@@ -32,8 +36,11 @@ public class DefaultModuleContext implements ModuleContext, Contextualizable {
 
     private void setup() {
         try {
+
+            LogUtil.info("初始化 LoggerManager");
             LoggerManager loggerManager = m_container.lookup(LoggerManager.class);
 
+            LogUtil.info("初始化 m_logger");
             m_logger = loggerManager.getLoggerForComponent(PlexusContainer.class.getName());
         } catch (Exception e) {
             throw new RuntimeException("Unable to get instance of Logger, "
@@ -67,7 +74,7 @@ public class DefaultModuleContext implements ModuleContext, Contextualizable {
 
     @Override
     public void info(String message) {
-        m_logger.info(message);
+        LogUtil.info(message);
     }
 
     @Override
@@ -93,6 +100,7 @@ public class DefaultModuleContext implements ModuleContext, Contextualizable {
     @Override
     public <T> T lookup(Class<T> role, String roleHint) {
         try {
+            LogUtil.info("查找依赖Bean", U.format("role", role.getName(), "roleHint", roleHint));
             return m_container.lookup(role, roleHint);
         } catch (ComponentLookupException e) {
             throw new RuntimeException("Unable to get component: " + role + ".", e);
@@ -115,6 +123,9 @@ public class DefaultModuleContext implements ModuleContext, Contextualizable {
 
     @Override
     public Module[] getModules(String... names) {
+
+        LogUtil.info("加载模块", U.format("names", U.toString(names)));
+
         Module[] modules = new Module[names.length];
         int index = 0;
 

@@ -1,5 +1,6 @@
 package org.unidal.helper;
 
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.unidal.lookup.annotation.Named;
@@ -164,22 +165,22 @@ public class Threads {
 
         @Override
         public void onThreadGroupCreated(ThreadGroup group, String name) {
-            m_logger.info(String.format("Thread group(%s) created.", name));
+            LogUtil.info(String.format("Thread group(%s) created.", name));
         }
 
         @Override
         public void onThreadPoolCreated(ExecutorService pool, String name) {
-            m_logger.info(String.format("Thread pool(%s) created.", name));
+            LogUtil.info(String.format("Thread pool(%s) created.", name));
         }
 
         @Override
         public void onThreadStarting(Thread thread, String name) {
-            m_logger.info(String.format("Starting thread(%s) ...", name));
+            LogUtil.info(String.format("Starting thread(%s) ...", name));
         }
 
         @Override
         public void onThreadStopping(Thread thread, String name) {
-            m_logger.info(String.format("Stopping thread(%s).", name));
+            LogUtil.info(String.format("Stopping thread(%s).", name));
         }
 
         @Override

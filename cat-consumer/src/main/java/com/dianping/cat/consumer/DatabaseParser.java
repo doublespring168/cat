@@ -18,18 +18,18 @@
  */
 package com.dianping.cat.consumer;
 
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-
+import com.dianping.cat.Cat;
+import com.dianping.cat.message.Event;
+import com.dianping.cat.message.Transaction;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.unidal.lookup.util.StringUtils;
 
-import com.dianping.cat.Cat;
-import com.dianping.cat.message.Event;
-import com.dianping.cat.message.Transaction;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class DatabaseParser implements LogEnabled {
 
@@ -81,7 +81,7 @@ public class DatabaseParser implements LogEnabled {
 					m_connections.put(connection, database);
 				} else {
 					m_errorConnections.add(connection);
-					m_logger.info("Unrecognized jdbc connection string: " + connection);
+					LogUtil.info("Unrecognized jdbc connection string: " + connection);
 				}
 			} catch (Exception e) {
 				m_errorConnections.add(connection);

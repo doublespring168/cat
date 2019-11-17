@@ -185,6 +185,7 @@ public class ContainerLoader {
     private static void setContainerToLookupLibrary(Class<?> loaderClass, PlexusContainer container) {
         try {
 
+            LogUtil.info("将PlexusContainer加入到LookupLibrary");
             Field field = loaderClass.getDeclaredField("s_container");
 
             field.setAccessible(true);

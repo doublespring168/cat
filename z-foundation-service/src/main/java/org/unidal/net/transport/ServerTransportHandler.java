@@ -1,5 +1,6 @@
 package org.unidal.net.transport;
 
+import com.doublespring.log.LogUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -80,7 +81,7 @@ public class ServerTransportHandler implements Task, LogEnabled {
                 int port = localAddress.getPort();
 
                 m_warmup.countDown();
-                m_logger.info(String.format("%s server is listening on %s:%s", m_descriptor.getName(), address, port));
+                LogUtil.info(String.format("%s server is listening on %s:%s", m_descriptor.getName(), address, port));
             }
 
             m_channel = future.channel();

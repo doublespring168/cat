@@ -32,6 +32,7 @@ import com.dianping.cat.message.io.TransportManager;
 import com.dianping.cat.message.spi.MessageManager;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.message.spi.internal.DefaultMessageTree;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
@@ -131,7 +132,7 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 			m_throttleTimes++;
 
 			if (m_throttleTimes % 10000 == 0 || m_throttleTimes == 1) {
-				m_logger.info("Cat Message is throttled! Times:" + m_throttleTimes);
+				LogUtil.info("Cat Message is throttled! Times:" + m_throttleTimes);
 			}
 		}
 	}

@@ -89,46 +89,71 @@ public class XBeanComponentBuilder<T> implements ComponentBuilder<T> {
             throws ComponentInstantiationException, ComponentLifecycleException {
         LinkedHashSet<ComponentDescriptor<?>> stack = STACK.get();
 
+        LogUtil.info("即将创建 Component", U.format(
+                "descriptor", U.toString(descriptor),
+                "ClassRealm", U.toString(realm),
+                "ComponentBuildListener", U.toString(listener)
+        ));
+
         if (stack.contains(descriptor)) {
+
+            LogUtil.info("ThreadLocal STACK中已存在该descriptor");
             // create list of circularity
             List<ComponentDescriptor<?>> circularity = new ArrayList<ComponentDescriptor<?>>(stack);
+            LogUtil.info("原始circularity", U.format("circularity", U.toString(circularity)));
             circularity.subList(circularity.indexOf(descriptor), circularity.size());
             circularity.add(descriptor);
+            LogUtil.info("调整circularity顺序后", U.format("circularity", U.toString(circularity)));
 
             // nice circularity message
             String message = "Creation circularity: ";
             for (ComponentDescriptor<?> componentDescriptor : circularity) {
                 message += "\n\t[" + componentDescriptor.getRole() + ", " + componentDescriptor.getRoleHint() + "]";
             }
+
+            LogUtil.info("抛出异常,组织后续代码运行", U.format("message", message));
+
             throw new ComponentInstantiationException(message);
         }
+
+        LogUtil.info("ThreadLocal STACK 中不存在该descriptor,添加descriptor到STACK");
 
         stack.add(descriptor);
 
         try {
             if (listener != null) {
+                LogUtil.info("调用Component创建前置监听器");
                 listener.beforeComponentCreate(descriptor, realm);
             }
+
+            LogUtil.info("创建 component");
 
             T component = createComponentInstance(descriptor, realm);
 
             if (listener != null) {
+                LogUtil.info("调用Component创建后置监听器");
                 listener.componentCreated(descriptor, component, realm);
             }
 
+            LogUtil.info("注册Lifecycle监听器", U.format("component", U.toString(component), "realm", U.toString(realm)));
             startComponentLifecycle(component, realm);
 
             if (listener != null) {
+                LogUtil.info("调用Component配置监听器");
                 listener.componentConfigured(descriptor, component, realm);
             }
 
             return component;
         } finally {
+            LogUtil.info("移除stack中的当前descriptor");
             stack.remove(descriptor);
         }
     }
 
     protected T createComponentInstance(ComponentDescriptor<T> descriptor, ClassRealm realm) throws ComponentInstantiationException, ComponentLifecycleException {
+
+        LogUtil.info("开始创建Component", U.format("descriptor", U.toString(descriptor), "ClassRealm", U.toString(realm)));
+
         MutablePlexusContainer container = getContainer();
         if (realm == null) {
             realm = descriptor.getRealm();
@@ -136,18 +161,27 @@ public class XBeanComponentBuilder<T> implements ComponentBuilder<T> {
 
         ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(realm);
+
+        LogUtil.info("重新设置ClassLoader", U.format("oldClassLoader", U.toString(oldClassLoader), "newClassLoader", U.toString(realm)));
+
         try {
             ObjectRecipe recipe;
-
             T instance;
+
             ComponentFactory componentFactory = container.getComponentFactoryManager().findComponentFactory(descriptor.getComponentFactory());
+            LogUtil.info("加载到 ComponentFactory", U.format("componentFactory", U.toString(componentFactory)));
+
             if (JavaComponentFactory.class.equals(componentFactory.getClass())) {
                 // xbean-reflect will create object and do injection
+                LogUtil.info("使用xbean-reflect创建Component,并设置属性");
                 recipe = createObjectRecipe(null, descriptor, realm);
                 instance = (T) recipe.create();
             } else {
                 // todo figure out how to easily let xbean use the factory to construct the component
                 // use object factory to construct component and then inject into that object
+
+                LogUtil.info("使用工厂类创建Component,并设置属性");
+
                 instance = (T) componentFactory.newInstance(descriptor, realm, container);
                 recipe = createObjectRecipe(instance, descriptor, realm);
                 recipe.setProperties(instance);
@@ -156,6 +190,7 @@ public class XBeanComponentBuilder<T> implements ComponentBuilder<T> {
             // todo figure out how to easily let xbean do this map oriented stuff (if it is actually used in plexus)
             if (instance instanceof MapOrientedComponent) {
                 MapOrientedComponent mapOrientedComponent = (MapOrientedComponent) instance;
+                LogUtil.info("当前实例为MapOrientedComponent类型实例,需要后续处理");
                 processMapOrientedComponent(descriptor, mapOrientedComponent, realm);
             }
 

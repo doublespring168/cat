@@ -25,6 +25,7 @@ import com.dianping.cat.message.io.BufReleaseHelper;
 import com.dianping.cat.message.io.ClientMessageEncoder;
 import com.dianping.cat.message.spi.internal.DefaultMessageTree;
 import com.dianping.cat.statistic.ServerStatisticManager;
+import com.doublespring.log.LogUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -66,11 +67,11 @@ public final class TcpSocketReceiver implements LogEnabled {
 
 	public synchronized void destory() {
 		try {
-			m_logger.info("start shutdown socket, port " + m_port);
+			LogUtil.info("start shutdown socket, port " + m_port);
 			m_future.channel().closeFuture();
 			m_bossGroup.shutdownGracefully();
 			m_workerGroup.shutdownGracefully();
-			m_logger.info("shutdown socket success");
+			LogUtil.info("shutdown socket success");
 		} catch (Exception e) {
 			m_logger.warn(e.getMessage(), e);
 		}
@@ -125,7 +126,7 @@ public final class TcpSocketReceiver implements LogEnabled {
 
 		try {
 			m_future = bootstrap.bind(port).sync();
-			m_logger.info("start netty server!");
+			LogUtil.info("start netty server!");
 		} catch (Exception e) {
 			m_logger.error("Started Netty Server Failed:" + port, e);
 		}

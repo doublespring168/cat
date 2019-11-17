@@ -200,7 +200,7 @@ public class ClientTransportHandler implements Task, LogEnabled {
                             m_channel.close();
                         }
 
-                        // m_logger.info(String.format("Connected to %s server(%s:%s)", m_descriptor.getName(),
+                        // LogUtil.info(String.format("Connected to %s server(%s:%s)", m_descriptor.getName(),
                         // address.getHostName(), address.getPort()));
                         m_channel = future.channel();
                         m_index = i;

@@ -1,5 +1,6 @@
 package org.unidal.test.browser;
 
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
@@ -41,7 +42,7 @@ public abstract class AbstractBrowser implements Browser, LogEnabled {
             String output = consumer.getOutput();
 
             if (output != null && output.length() > 0) {
-                m_logger.info(output);
+                LogUtil.info(output);
             }
         } catch (RuntimeException e) {
             throw e;

@@ -1,5 +1,6 @@
 package org.unidal.lookup.logger;
 
+import com.doublespring.log.LogUtil;
 import org.apache.log4j.*;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.codehaus.plexus.logging.AbstractLogger;
@@ -151,7 +152,7 @@ public class Log4jLoggerManager extends BaseLoggerManager {
         @Override
         public void info(String message, Throwable t) {
             if (isInfoEnabled()) {
-                m_logger.info(message, t);
+                LogUtil.info(message, t);
             }
         }
 

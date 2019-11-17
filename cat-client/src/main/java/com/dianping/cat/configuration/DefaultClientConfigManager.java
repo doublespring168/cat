@@ -18,15 +18,13 @@
  */
 package com.dianping.cat.configuration;
 
-import java.io.File;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
+import com.dianping.cat.Cat;
+import com.dianping.cat.configuration.client.entity.ClientConfig;
+import com.dianping.cat.configuration.client.entity.Domain;
+import com.dianping.cat.configuration.client.entity.Server;
+import com.dianping.cat.configuration.client.transform.DefaultSaxParser;
+import com.dianping.cat.message.spi.MessageTree;
+import com.doublespring.log.LogUtil;
 import com.site.helper.JsonBuilder;
 import com.site.helper.Splitters;
 import org.codehaus.plexus.logging.LogEnabled;
@@ -37,12 +35,9 @@ import org.unidal.helper.Files;
 import org.unidal.helper.Urls;
 import org.unidal.lookup.annotation.Named;
 
-import com.dianping.cat.Cat;
-import com.dianping.cat.configuration.client.entity.ClientConfig;
-import com.dianping.cat.configuration.client.entity.Domain;
-import com.dianping.cat.configuration.client.entity.Server;
-import com.dianping.cat.configuration.client.transform.DefaultSaxParser;
-import com.dianping.cat.message.spi.MessageTree;
+import java.io.File;
+import java.io.InputStream;
+import java.util.*;
 
 @Named(type = ClientConfigManager.class)
 public class DefaultClientConfigManager implements LogEnabled, ClientConfigManager, Initializable {
@@ -150,7 +145,7 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 		String xml = Cat.getCatHome() + "client.xml";
 		File configFile = new File(xml);
 
-		m_logger.info("client xml path " + xml);
+		LogUtil.info("client xml path " + xml);
 		initialize(configFile);
 	}
 
@@ -165,9 +160,9 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 					String xml = Files.forIO().readFrom(configFile.getCanonicalFile(), "utf-8");
 
 					globalConfig = DefaultSaxParser.parse(xml);
-					m_logger.info(String.format("Global config file(%s) found.", configFile));
+					LogUtil.info(String.format("Global config file(%s) found.", configFile));
 				} else {
-					m_logger.warn(String.format("Global config file(%s) not found, IGNORED.", configFile));
+					LogUtil.info(String.format("Global config file(%s) not found, IGNORED.", configFile));
 				}
 			}
 
@@ -245,13 +240,13 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 
 				appName = prop.getProperty("app.name");
 				if (appName != null) {
-					m_logger.info(String.format("Find domain name %s from app.properties.", appName));
+					LogUtil.info(String.format("Find domain name %s from app.properties.", appName));
 				} else {
-					m_logger.info(String.format("Can't find app.name from app.properties."));
+					LogUtil.info(String.format("Can't find app.name from app.properties."));
 					return null;
 				}
 			} else {
-				m_logger.info(String.format("Can't find app.properties in %s", PROPERTIES_FILE));
+				LogUtil.info(String.format("Can't find app.properties in %s", PROPERTIES_FILE));
 			}
 		} catch (Exception e) {
 			m_logger.error(e.getMessage(), e);

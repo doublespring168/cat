@@ -31,6 +31,7 @@ import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.message.spi.codec.NativeMessageCodec;
 import com.dianping.cat.status.StatusExtension;
 import com.dianping.cat.status.StatusExtensionRegister;
+import com.doublespring.log.LogUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import org.codehaus.plexus.logging.LogEnabled;
@@ -100,7 +101,7 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
-				m_logger.info("shut down cat client in runtime shut down hook!");
+				LogUtil.info("shut down cat client in runtime shut down hook!");
 				shutdown();
 			}
 		});

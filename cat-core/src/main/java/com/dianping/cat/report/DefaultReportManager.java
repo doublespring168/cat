@@ -18,22 +18,6 @@
  */
 package com.dianping.cat.report;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.codehaus.plexus.logging.LogEnabled;
-import org.codehaus.plexus.logging.Logger;
-import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
-import org.unidal.lookup.ContainerHolder;
-import org.unidal.lookup.annotation.Inject;
-
 import com.dianping.cat.Cat;
 import com.dianping.cat.configuration.NetworkInterfaceManager;
 import com.dianping.cat.core.dal.HourlyReport;
@@ -42,6 +26,15 @@ import com.dianping.cat.core.dal.HourlyReportContentDao;
 import com.dianping.cat.core.dal.HourlyReportDao;
 import com.dianping.cat.message.Message;
 import com.dianping.cat.message.Transaction;
+import com.doublespring.log.LogUtil;
+import org.codehaus.plexus.logging.LogEnabled;
+import org.codehaus.plexus.logging.Logger;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
+import org.unidal.lookup.ContainerHolder;
+import org.unidal.lookup.annotation.Inject;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.dianping.cat.Constants.HOUR;
 
@@ -320,7 +313,7 @@ public class DefaultReportManager<T> extends ContainerHolder implements ReportMa
 					reports.remove(domain);
 				}
 				if (!errorDomains.isEmpty()) {
-					m_logger.info("error domain:" + errorDomains);
+					LogUtil.info("error domain:" + errorDomains);
 				}
 
 				m_reportDelegate.beforeSave(reports);
@@ -354,7 +347,7 @@ public class DefaultReportManager<T> extends ContainerHolder implements ReportMa
 		}
 	}
 
-	public static enum StoragePolicy {
+	public enum StoragePolicy {
 		FILE,
 
 		FILE_AND_DB;

@@ -28,6 +28,7 @@ import com.dianping.cat.message.Transaction;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.report.DefaultReportManager.StoragePolicy;
 import com.dianping.cat.report.ReportManager;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.unidal.lookup.annotation.Inject;
@@ -84,7 +85,7 @@ public class CrossAnalyzer extends AbstractMessageAnalyzer<CrossReport> implemen
 		if (atEnd && !isLocalMode()) {
 			m_reportManager.storeHourlyReports(getStartTime(), StoragePolicy.FILE_AND_DB, m_index);
 
-			m_logger.info("discard server logview count " + m_discardLogs + ", errorAppName " + m_errorAppName);
+			LogUtil.info("discard server logview count " + m_discardLogs + ", errorAppName " + m_errorAppName);
 		} else {
 			m_reportManager.storeHourlyReports(getStartTime(), StoragePolicy.FILE, m_index);
 		}
@@ -111,11 +112,7 @@ public class CrossAnalyzer extends AbstractMessageAnalyzer<CrossReport> implemen
 
 	@Override
 	public boolean isEligable(MessageTree tree) {
-		if (tree.getTransactions().size() > 0) {
-			return true;
-		} else {
-			return false;
-		}
+		return tree.getTransactions().size() > 0;
 	}
 
 	@Override
@@ -195,7 +192,7 @@ public class CrossAnalyzer extends AbstractMessageAnalyzer<CrossReport> implemen
 		List<Transaction> transactions = tree.getTransactions();
 
 		for (Transaction t : transactions) {
-			processTransaction(report, tree, (Transaction) t);
+			processTransaction(report, tree, t);
 		}
 	}
 
@@ -344,11 +341,7 @@ public class CrossAnalyzer extends AbstractMessageAnalyzer<CrossReport> implemen
 		}
 
 		public boolean validate() {
-			if (m_localAddress != null && m_remoteAddress != null) {
-				return true;
-			} else {
-				return false;
-			}
+			return m_localAddress != null && m_remoteAddress != null;
 		}
 	}
 

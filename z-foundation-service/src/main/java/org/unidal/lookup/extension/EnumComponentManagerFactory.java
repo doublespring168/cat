@@ -81,18 +81,26 @@ public class EnumComponentManagerFactory implements ComponentManagerFactory {
             String field = parts.get(0);
             Object[] values = Reflects.forMethod().invokeStaticMethod(enumClass, "values");
 
+            LogUtil.info("enum values");
+
             for (Object value : values) {
                 if (field.equals(value.toString())) {
+
                     EnumValueHolder enumValueHolder = new EnumValueHolder();
 
                     try {
+
+                        LogUtil.info("实例化 XBeanComponentBuilder");
                         XBeanComponentBuilder<T> builder = new XBeanComponentBuilder<T>(this);
+
+                        LogUtil.info("实例化 ObjectRecipe");
                         ObjectRecipe recipe = builder.createObjectRecipe((T) enumValueHolder, descriptor, getRealm());
 
                         EnumValueHolder.put(value);
                         recipe.setFactoryMethod("get");
                         recipe.create(Object.class, false);
 
+                        LogUtil.info("注册Component监听器", U.format("value", U.toString(value)));
                         start(value);
                     } catch (Exception e) {
                         throw new ComponentInstantiationException(e.getMessage(), e);

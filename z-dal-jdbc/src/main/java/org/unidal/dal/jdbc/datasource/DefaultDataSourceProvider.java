@@ -1,5 +1,6 @@
 package org.unidal.dal.jdbc.datasource;
 
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.unidal.dal.jdbc.datasource.model.entity.DataSourcesDef;
@@ -45,7 +46,7 @@ public class DefaultDataSourceProvider implements DataSourceProvider, LogEnabled
                 }
 
                 if (file.canRead()) {
-                    m_logger.info(String.format("Loading data sources from %s ...", file));
+                    LogUtil.info(String.format("Loading data sources from %s ...", file));
 
                     try {
                         is = new FileInputStream(file);
@@ -64,7 +65,7 @@ public class DefaultDataSourceProvider implements DataSourceProvider, LogEnabled
                     }
 
                     if (is != null) {
-                        m_logger.info(String.format("Loading data sources from resource(%s)", m_datasourceFile));
+                        LogUtil.info(String.format("Loading data sources from resource(%s)", m_datasourceFile));
                     }
                 }
 

@@ -18,18 +18,18 @@
  */
 package com.dianping.cat.config.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.regex.Pattern;
-
+import com.dianping.cat.Cat;
+import com.dianping.cat.Constants;
+import com.dianping.cat.config.content.ContentFetcher;
+import com.dianping.cat.configuration.NetworkInterfaceManager;
+import com.dianping.cat.configuration.server.entity.*;
+import com.dianping.cat.configuration.server.transform.DefaultSaxParser;
+import com.dianping.cat.core.config.Config;
+import com.dianping.cat.core.config.ConfigDao;
+import com.dianping.cat.core.config.ConfigEntity;
+import com.dianping.cat.task.TimerSyncTask;
+import com.dianping.cat.task.TimerSyncTask.SyncHandler;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
@@ -43,24 +43,11 @@ import org.unidal.lookup.annotation.Named;
 import org.unidal.tuple.Pair;
 import org.xml.sax.SAXException;
 
-import com.dianping.cat.Cat;
-import com.dianping.cat.Constants;
-import com.dianping.cat.config.content.ContentFetcher;
-import com.dianping.cat.configuration.NetworkInterfaceManager;
-import com.dianping.cat.configuration.server.entity.Domain;
-import com.dianping.cat.configuration.server.entity.HarfsConfig;
-import com.dianping.cat.configuration.server.entity.HdfsConfig;
-import com.dianping.cat.configuration.server.entity.LongConfig;
-import com.dianping.cat.configuration.server.entity.Property;
-import com.dianping.cat.configuration.server.entity.Server;
-import com.dianping.cat.configuration.server.entity.ServerConfig;
-import com.dianping.cat.configuration.server.entity.StorageConfig;
-import com.dianping.cat.configuration.server.transform.DefaultSaxParser;
-import com.dianping.cat.core.config.Config;
-import com.dianping.cat.core.config.ConfigDao;
-import com.dianping.cat.core.config.ConfigEntity;
-import com.dianping.cat.task.TimerSyncTask;
-import com.dianping.cat.task.TimerSyncTask.SyncHandler;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
 
 @Named
 public class ServerConfigManager implements LogEnabled, Initializable {
@@ -419,7 +406,7 @@ public class ServerConfigManager implements LogEnabled, Initializable {
 			try {
 				String localServerFile = Cat.getCatHome() + "server.xml";
 
-				m_logger.info("init cat server with cat server xml " + localServerFile);
+				LogUtil.info("init cat server with cat server xml " + localServerFile);
 				initialize(new File(localServerFile));
 			} catch (Exception e) {
 				m_logger.error(e.getMessage());
@@ -458,7 +445,7 @@ public class ServerConfigManager implements LogEnabled, Initializable {
 
 	public void initialize(File configFile) throws Exception {
 		if (configFile != null && configFile.canRead()) {
-			m_logger.info(String.format("Loading configuration file(%s) ...", configFile.getCanonicalPath()));
+			LogUtil.info(String.format("Loading configuration file(%s) ...", configFile.getCanonicalPath()));
 
 			String xml = Files.forIO().readFrom(configFile, "utf-8");
 			m_config = DefaultSaxParser.parse(xml);
@@ -534,12 +521,12 @@ public class ServerConfigManager implements LogEnabled, Initializable {
 		if (isLocalMode()) {
 			m_logger.warn("CAT server is running in LOCAL mode! No HDFS or MySQL will be accessed!");
 		}
-		m_logger.info("CAT server is running with hdfs," + isHdfsOn());
-		m_logger.info("CAT server is running with alert," + isAlertMachine());
-		m_logger.info("CAT server is running with job," + isJobMachine());
+		LogUtil.info("CAT server is running with hdfs," + isHdfsOn());
+		LogUtil.info("CAT server is running with alert," + isAlertMachine());
+		LogUtil.info("CAT server is running with job," + isJobMachine());
 
 		if (m_server != null) {
-			m_logger.info(m_server.toString());
+			LogUtil.info(m_server.toString());
 
 			if (isLocalMode()) {
 				m_threadPool = Threads.forPool().getFixedThreadPool("Cat-ModelService", 5);

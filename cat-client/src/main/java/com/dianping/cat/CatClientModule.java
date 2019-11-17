@@ -18,9 +18,12 @@
  */
 package com.dianping.cat;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.locks.LockSupport;
-
+import com.dianping.cat.analyzer.LocalAggregator;
+import com.dianping.cat.configuration.ClientConfigManager;
+import com.dianping.cat.message.internal.MilliSecondTimer;
+import com.dianping.cat.message.io.TransportManager;
+import com.dianping.cat.status.StatusUpdateTask;
+import com.doublespring.log.LogUtil;
 import org.unidal.helper.Threads;
 import org.unidal.helper.Threads.AbstractThreadListener;
 import org.unidal.initialization.AbstractModule;
@@ -29,11 +32,8 @@ import org.unidal.initialization.Module;
 import org.unidal.initialization.ModuleContext;
 import org.unidal.lookup.annotation.Named;
 
-import com.dianping.cat.analyzer.LocalAggregator;
-import com.dianping.cat.configuration.ClientConfigManager;
-import com.dianping.cat.message.internal.MilliSecondTimer;
-import com.dianping.cat.message.io.TransportManager;
-import com.dianping.cat.status.StatusUpdateTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.LockSupport;
 
 @Named(type = Module.class, value = CatClientModule.ID)
 public class CatClientModule extends AbstractModule {
@@ -41,7 +41,7 @@ public class CatClientModule extends AbstractModule {
 
 	@Override
 	protected void execute(final ModuleContext ctx) throws Exception {
-		ctx.info("Current working directory is " + System.getProperty("user.dir"));
+		LogUtil.info("Current working directory is " + System.getProperty("user.dir"));
 
 		// initialize milli-second resolution level timer
 		MilliSecondTimer.initialize();

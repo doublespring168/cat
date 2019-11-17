@@ -18,18 +18,19 @@
  */
 package org.unidal.cat.message.storage.internals;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.unidal.cat.message.storage.BlockDumper;
 import org.unidal.cat.message.storage.BlockDumperManager;
 import org.unidal.lookup.ContainerHolder;
 import org.unidal.lookup.annotation.Named;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Named(type = BlockDumperManager.class)
 public class DefaultBlockDumperManager extends ContainerHolder implements LogEnabled, BlockDumperManager {
@@ -71,7 +72,7 @@ public class DefaultBlockDumperManager extends ContainerHolder implements LogEna
 					dumper.initialize(hour);
 
 					m_map.put(hour, dumper);
-					m_logger.info("Create block dumper " + sdf.format(new Date(TimeUnit.HOURS.toMillis(hour))));
+					LogUtil.info("Create block dumper " + sdf.format(new Date(TimeUnit.HOURS.toMillis(hour))));
 				}
 			}
 		}

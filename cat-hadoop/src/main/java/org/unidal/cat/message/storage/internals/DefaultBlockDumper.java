@@ -18,13 +18,10 @@
  */
 package org.unidal.cat.message.storage.internals;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
+import com.dianping.cat.Cat;
+import com.dianping.cat.config.server.ServerConfigManager;
+import com.dianping.cat.statistic.ServerStatisticManager;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.unidal.cat.message.storage.Block;
@@ -36,9 +33,12 @@ import org.unidal.lookup.ContainerHolder;
 import org.unidal.lookup.annotation.Inject;
 import org.unidal.lookup.annotation.Named;
 
-import com.dianping.cat.Cat;
-import com.dianping.cat.config.server.ServerConfigManager;
-import com.dianping.cat.statistic.ServerStatisticManager;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 @Named(type = BlockDumper.class, instantiationStrategy = Named.PER_LOOKUP)
 public class DefaultBlockDumper extends ContainerHolder implements BlockDumper, LogEnabled {
@@ -99,7 +99,7 @@ public class DefaultBlockDumper extends ContainerHolder implements BlockDumper, 
 
 			if ((++m_failCount % 100) == 0) {
 				Cat.logError(new BlockQueueFullException("Error when adding block to queue, fails: " + m_failCount));
-				m_logger.info("block dump queue is full " + m_failCount + " index:" + index);
+				LogUtil.info("block dump queue is full " + m_failCount + " index:" + index);
 			}
 		} else {
 			m_statisticManager.addBlockTotal(1);

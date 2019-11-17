@@ -18,11 +18,8 @@
  */
 package org.unidal.cat.message.storage.internals;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.dianping.cat.Cat;
+import com.doublespring.log.LogUtil;
 import io.netty.util.ReferenceCountUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
@@ -30,7 +27,10 @@ import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
 import org.unidal.lookup.annotation.Named;
 
-import com.dianping.cat.Cat;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Named(type = ByteBufCache.class)
 public class DefaultByteBufCache implements ByteBufCache, Initializable, LogEnabled {
@@ -79,7 +79,7 @@ public class DefaultByteBufCache implements ByteBufCache, Initializable, LogEnab
 			}
 
 			if (m_count.incrementAndGet() % 100 == 0) {
-				m_logger.info("error when put back buf");
+				LogUtil.info("error when put back buf");
 			}
 		}
 	}

@@ -20,6 +20,7 @@ package com.dianping.cat.message.io;
 
 import com.dianping.cat.configuration.ClientConfigManager;
 import com.dianping.cat.configuration.client.entity.Server;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
@@ -67,7 +68,7 @@ public class DefaultTransportManager implements TransportManager, Initializable,
 				}
 			}
 
-			m_logger.info("Remote CAT servers: " + addresses);
+			LogUtil.info("Remote CAT servers: " + addresses);
 
 			if (addresses.isEmpty()) {
 				throw new RuntimeException("All servers in configuration are disabled!\r\n" + servers);

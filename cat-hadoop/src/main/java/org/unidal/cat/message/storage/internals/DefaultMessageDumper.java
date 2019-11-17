@@ -18,15 +18,14 @@
  */
 package org.unidal.cat.message.storage.internals;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.dianping.cat.Cat;
+import com.dianping.cat.CatConstants;
+import com.dianping.cat.config.server.ServerConfigManager;
+import com.dianping.cat.helper.TimeHelper;
+import com.dianping.cat.message.internal.MessageId;
+import com.dianping.cat.message.spi.MessageTree;
+import com.dianping.cat.statistic.ServerStatisticManager;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.unidal.cat.message.storage.BlockDumperManager;
@@ -39,13 +38,14 @@ import org.unidal.lookup.ContainerHolder;
 import org.unidal.lookup.annotation.Inject;
 import org.unidal.lookup.annotation.Named;
 
-import com.dianping.cat.Cat;
-import com.dianping.cat.CatConstants;
-import com.dianping.cat.config.server.ServerConfigManager;
-import com.dianping.cat.helper.TimeHelper;
-import com.dianping.cat.message.internal.MessageId;
-import com.dianping.cat.message.spi.MessageTree;
-import com.dianping.cat.statistic.ServerStatisticManager;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Named(type = MessageDumper.class, instantiationStrategy = Named.PER_LOOKUP)
 public class DefaultMessageDumper extends ContainerHolder implements MessageDumper, LogEnabled {
@@ -78,17 +78,17 @@ public class DefaultMessageDumper extends ContainerHolder implements MessageDump
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
 		String date = sdf.format(new Date(hour * TimeHelper.ONE_HOUR));
 
-		m_logger.info("starting close message processor " + date);
+		LogUtil.info("starting close message processor " + date);
 		closeMessageProcessor();
-		m_logger.info("end close dumper processor " + date);
+		LogUtil.info("end close dumper processor " + date);
 
-		m_logger.info("starting close dumper manager " + date);
+		LogUtil.info("starting close dumper manager " + date);
 		m_blockDumperManager.close(hour);
-		m_logger.info("end close dumper manager " + date);
+		LogUtil.info("end close dumper manager " + date);
 
-		m_logger.info("starting close bucket manager " + date);
+		LogUtil.info("starting close bucket manager " + date);
 		m_bucketManager.closeBuckets(hour);
-		m_logger.info("end close bucket manager " + date);
+		LogUtil.info("end close bucket manager " + date);
 	}
 
 	private void closeMessageProcessor() throws InterruptedException {
@@ -157,7 +157,7 @@ public class DefaultMessageDumper extends ContainerHolder implements MessageDump
 			if ((m_failCount.incrementAndGet() % 100) == 0) {
 				Cat.logError(new MessageQueueFullException("Error when adding message to queue, fails: " + m_failCount));
 
-				m_logger.info("message tree queue is full " + m_failCount + " index " + index);
+				LogUtil.info("message tree queue is full " + m_failCount + " index " + index);
 				// tree.getBuffer().release();
 			}
 		} else {

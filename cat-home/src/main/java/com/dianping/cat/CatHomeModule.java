@@ -26,6 +26,7 @@ import com.dianping.cat.hadoop.CatHadoopModule;
 import com.dianping.cat.report.alert.AlarmManager;
 import com.dianping.cat.report.task.DefaultTaskConsumer;
 import com.dianping.cat.report.task.reload.ReportReloadTask;
+import com.doublespring.log.LogUtil;
 import org.unidal.helper.Threads;
 import org.unidal.initialization.AbstractModule;
 import org.unidal.initialization.Module;
@@ -38,30 +39,46 @@ public class CatHomeModule extends AbstractModule {
 
     @Override
     protected void execute(ModuleContext ctx) throws Exception {
+
+        LogUtil.info("初始化 CatHomeModule");
+
+        LogUtil.info("实例化 ServerConfigManager");
         ServerConfigManager serverConfigManager = ctx.lookup(ServerConfigManager.class);
+
+        LogUtil.info("实例化 ReportReloadTask");
         ReportReloadTask reportReloadTask = ctx.lookup(ReportReloadTask.class);
 
+        LogUtil.info("启动 ReportReloadTask");
         Threads.forGroup("cat").start(reportReloadTask);
 
+        LogUtil.info("实例化 MessageConsumer");
         ctx.lookup(MessageConsumer.class);
 
         if (serverConfigManager.isJobMachine()) {
+
+            LogUtil.info("实例化 DefaultTaskConsumer");
             DefaultTaskConsumer taskConsumer = ctx.lookup(DefaultTaskConsumer.class);
 
+            LogUtil.info("启动 DefaultTaskConsumer");
             Threads.forGroup("cat").start(taskConsumer);
+
         }
 
+
+        LogUtil.info("实例化 AlarmManager");
         AlarmManager alarmManager = ctx.lookup(AlarmManager.class);
 
         if (serverConfigManager.isAlertMachine()) {
+            LogUtil.info("启动 AlarmManager");
             alarmManager.startAlarm();
         }
 
+        LogUtil.info("实例化 MessageConsumer");
         final MessageConsumer consumer = ctx.lookup(MessageConsumer.class);
         Runtime.getRuntime().addShutdownHook(new Thread() {
-
             @Override
             public void run() {
+                LogUtil.info("服务及将关闭,保存程序快照");
                 consumer.doCheckpoint();
             }
         });
@@ -84,6 +101,7 @@ public class CatHomeModule extends AbstractModule {
 
     @Override
     public Module[] getDependencies(ModuleContext ctx) {
+        LogUtil.info("加载依赖模块");
         return ctx.getModules(CatConsumerModule.ID, CatHadoopModule.ID);
     }
 

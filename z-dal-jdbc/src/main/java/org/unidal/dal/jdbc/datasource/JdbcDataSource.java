@@ -1,6 +1,7 @@
 package org.unidal.dal.jdbc.datasource;
 
 import com.dianping.cat.Cat;
+import com.doublespring.log.LogUtil;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
@@ -71,11 +72,11 @@ public class JdbcDataSource implements DataSource, Disposable, LogEnabled {
 
             setConnectionProperties(cpds, d.getProperty("connectionProperties", null));
 
-            m_logger.info(String.format("Connecting to JDBC data source(%s) "
+            LogUtil.info(String.format("Connecting to JDBC data source(%s) "
                     + "with properties(driver=%s, url=%s, user=%s) ...", id, driver, url, user));
             m_cpds = cpds;
             m_cpds.getConnection().close();
-            m_logger.info(String.format("Connected to JDBC data source(%s).", id));
+            LogUtil.info(String.format("Connected to JDBC data source(%s).", id));
         } catch (Throwable e) {
             cpds.close();
 

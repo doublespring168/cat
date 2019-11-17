@@ -1,5 +1,6 @@
 package org.unidal.net.transport.handler;
 
+import com.doublespring.log.LogUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -22,7 +23,7 @@ public class ClientStateHandler extends ChannelInboundHandlerAdapter implements 
         Channel channel = ctx.channel();
         InetSocketAddress address = (InetSocketAddress) channel.remoteAddress();
 
-        m_logger.info(String.format("Connected to %s server at %s:%s", m_name, address.getHostName(), address.getPort()));
+        LogUtil.info(String.format("Connected to %s server at %s:%s", m_name, address.getHostName(), address.getPort()));
         super.channelActive(ctx);
     }
 
@@ -31,7 +32,7 @@ public class ClientStateHandler extends ChannelInboundHandlerAdapter implements 
         Channel channel = ctx.channel();
         InetSocketAddress address = (InetSocketAddress) channel.remoteAddress();
 
-        m_logger.info(String.format("Disconnected from %s server at %s:%s", m_name, address.getHostName(),
+        LogUtil.info(String.format("Disconnected from %s server at %s:%s", m_name, address.getHostName(),
                 address.getPort()));
         super.channelInactive(ctx);
     }

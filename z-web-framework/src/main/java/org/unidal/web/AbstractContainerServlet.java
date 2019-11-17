@@ -1,6 +1,7 @@
 package org.unidal.web;
 
 import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLifecycleException;
@@ -45,24 +46,27 @@ public abstract class AbstractContainerServlet extends HttpServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
 
-        m_logger.info("初始化 AbstractContainerServlet");
-        m_logger.info(U.format("config", U.toJSS(config)).get());
+        LogUtil.info("初始化 AbstractContainerServlet");
+        LogUtil.info(U.format("config", U.toJSS(config)).get());
 
-        m_logger.info("初始化 HttpServlet");
+        LogUtil.info("初始化 HttpServlet");
         super.init(config);
 
 
         try {
             if (m_container == null) {
-                m_logger.info("初始化 PlexusContainer");
+                LogUtil.info("初始化 PlexusContainer");
                 m_container = ContainerLoader.getDefaultContainer();
             } else {
-                m_logger.info("已存在 PlexusContainer,不需初始化");
+                LogUtil.info("已存在 PlexusContainer,不需初始化");
             }
+
+            LogUtil.info("初始化 Logger");
 
             m_logger = ((DefaultPlexusContainer) m_container).getLoggerManager().getLoggerForComponent(
                     getClass().getName());
 
+            LogUtil.info("初始化 Components");
             initComponents(config);
         } catch (Exception e) {
             if (m_logger != null) {

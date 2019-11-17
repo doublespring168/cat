@@ -18,22 +18,11 @@
  */
 package com.dianping.cat.message.io;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.dianping.cat.configuration.ClientConfigManager;
+import com.dianping.cat.message.internal.MessageIdFactory;
+import com.doublespring.log.LogUtil;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.codehaus.plexus.logging.Logger;
@@ -42,8 +31,13 @@ import org.unidal.helper.Threads.Task;
 import org.unidal.lookup.util.StringUtils;
 import org.unidal.tuple.Pair;
 
-import com.dianping.cat.configuration.ClientConfigManager;
-import com.dianping.cat.message.internal.MessageIdFactory;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChannelManager implements Task {
 
@@ -144,7 +138,7 @@ public class ChannelManager implements Task {
 		Pair<Boolean, String> pair = routerConfigChanged();
 
 		if (pair.getKey()) {
-			m_logger.info("router config changed :" + pair.getValue());
+			LogUtil.info("router config changed :" + pair.getValue());
 			String servers = pair.getValue();
 			List<InetSocketAddress> serverAddresses = parseSocketAddress(servers);
 			ChannelHolder newHolder = initChannel(serverAddresses, servers);
@@ -155,7 +149,7 @@ public class ChannelManager implements Task {
 
 					m_activeChannelHolder = newHolder;
 					closeChannelHolder(last);
-					m_logger.info("switch active channel to " + m_activeChannelHolder);
+					LogUtil.info("switch active channel to " + m_activeChannelHolder);
 				} else {
 					m_activeChannelHolder = newHolder;
 				}
@@ -187,19 +181,49 @@ public class ChannelManager implements Task {
 		return isWriteable;
 	}
 
-	private void closeChannel(ChannelFuture channel) {
+	private ChannelHolder initChannel(List<InetSocketAddress> addresses, String serverConfig) {
 		try {
-			if (channel != null) {
-				SocketAddress address = channel.channel().remoteAddress();
+			int len = addresses.size();
 
-				if (address != null) {
-					m_logger.info("close channel " + address);
+			for (int i = 0; i < len; i++) {
+				InetSocketAddress address = addresses.get(i);
+				String hostAddress = address.getAddress().getHostAddress();
+				ChannelHolder holder = null;
+
+				if (m_activeChannelHolder != null && hostAddress.equals(m_activeChannelHolder.getIp())) {
+					holder = new ChannelHolder();
+					holder.setActiveFuture(m_activeChannelHolder.getActiveFuture()).setConnectChanged(false);
+				} else {
+					ChannelFuture future = createChannel(address);
+
+					if (future != null) {
+						holder = new ChannelHolder();
+						holder.setActiveFuture(future).setConnectChanged(true);
+					}
 				}
-				channel.channel().close();
+				if (holder != null) {
+					holder.setActiveIndex(i).setIp(hostAddress);
+					holder.setActiveServerConfig(serverConfig).setServerAddresses(addresses);
+
+					LogUtil.info("success when init CAT server, new active holder" + holder.toString());
+					return holder;
+				}
 			}
+		} catch (Exception e) {
+			m_logger.error(e.getMessage(), e);
+		}
+
+		try {
+			StringBuilder sb = new StringBuilder();
+
+			for (InetSocketAddress address : addresses) {
+				sb.append(address.toString()).append(";");
+			}
+			LogUtil.info("Error when init CAT server " + sb.toString());
 		} catch (Exception e) {
 			// ignore
 		}
+		return null;
 	}
 
 	private void closeChannelHolder(ChannelHolder channelHolder) {
@@ -213,7 +237,7 @@ public class ChannelManager implements Task {
 	}
 
 	private ChannelFuture createChannel(InetSocketAddress address) {
-		m_logger.info("start connect server" + address.toString());
+		LogUtil.info("start connect server" + address.toString());
 		ChannelFuture future = null;
 
 		try {
@@ -224,7 +248,7 @@ public class ChannelManager implements Task {
 				m_logger.error("Error when try connecting to " + address);
 				closeChannel(future);
 			} else {
-				m_logger.info("Connected to CAT server at " + address);
+				LogUtil.info("Connected to CAT server at " + address);
 				return future;
 			}
 		} catch (Throwable e) {
@@ -253,49 +277,19 @@ public class ChannelManager implements Task {
 		return "TcpSocketSender-ChannelManager";
 	}
 
-	private ChannelHolder initChannel(List<InetSocketAddress> addresses, String serverConfig) {
+	private void closeChannel(ChannelFuture channel) {
 		try {
-			int len = addresses.size();
+			if (channel != null) {
+				SocketAddress address = channel.channel().remoteAddress();
 
-			for (int i = 0; i < len; i++) {
-				InetSocketAddress address = addresses.get(i);
-				String hostAddress = address.getAddress().getHostAddress();
-				ChannelHolder holder = null;
-
-				if (m_activeChannelHolder != null && hostAddress.equals(m_activeChannelHolder.getIp())) {
-					holder = new ChannelHolder();
-					holder.setActiveFuture(m_activeChannelHolder.getActiveFuture()).setConnectChanged(false);
-				} else {
-					ChannelFuture future = createChannel(address);
-
-					if (future != null) {
-						holder = new ChannelHolder();
-						holder.setActiveFuture(future).setConnectChanged(true);
-					}
+				if (address != null) {
+					LogUtil.info("close channel " + address);
 				}
-				if (holder != null) {
-					holder.setActiveIndex(i).setIp(hostAddress);
-					holder.setActiveServerConfig(serverConfig).setServerAddresses(addresses);
-
-					m_logger.info("success when init CAT server, new active holder" + holder.toString());
-					return holder;
-				}
+				channel.channel().close();
 			}
-		} catch (Exception e) {
-			m_logger.error(e.getMessage(), e);
-		}
-
-		try {
-			StringBuilder sb = new StringBuilder();
-
-			for (InetSocketAddress address : addresses) {
-				sb.append(address.toString()).append(";");
-			}
-			m_logger.info("Error when init CAT server " + sb.toString());
 		} catch (Exception e) {
 			// ignore
 		}
-		return null;
 	}
 
 	private boolean isChannelStalled(ChannelHolder holder) {
@@ -303,11 +297,7 @@ public class ChannelManager implements Task {
 		boolean active = checkActive(future);
 
 		if (!active) {
-			if ((++m_channelStalledTimes) % 3 == 0) {
-				return true;
-			} else {
-				return false;
-			}
+			return (++m_channelStalledTimes) % 3 == 0;
 		} else {
 			if (m_channelStalledTimes > 0) {
 				m_channelStalledTimes--;
@@ -475,7 +465,7 @@ public class ChannelManager implements Task {
 
 		@Override
 		protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-			m_logger.info("receiver msg from server:" + msg);
+			LogUtil.info("receiver msg from server:" + msg);
 		}
 	}
 
