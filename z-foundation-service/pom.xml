@@ -16,6 +16,12 @@
 
 
         <dependency>
+            <groupId>com.dianping.cat</groupId>
+            <artifactId>cat-common</artifactId>
+        </dependency>
+
+
+        <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-container-default</artifactId>
             <version>1.6</version>

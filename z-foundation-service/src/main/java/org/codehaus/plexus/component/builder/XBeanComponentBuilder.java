@@ -15,6 +15,8 @@
  */
 package org.codehaus.plexus.component.builder;
 
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 import org.apache.xbean.recipe.*;
 import org.codehaus.plexus.ComponentRegistry;
 import org.codehaus.plexus.MutablePlexusContainer;
@@ -69,6 +71,7 @@ public class XBeanComponentBuilder<T> implements ComponentBuilder<T> {
     }
 
     public XBeanComponentBuilder(ComponentManager<T> componentManager) {
+        LogUtil.info("实例化 XBeanComponentBuilder", U.format("componentManager", componentManager.getClass(), "T", componentManager.getType().getClass()));
         setComponentManager(componentManager);
     }
 
@@ -77,12 +80,15 @@ public class XBeanComponentBuilder<T> implements ComponentBuilder<T> {
     }
 
     public void setComponentManager(ComponentManager<T> componentManager) {
+        LogUtil.info("初始化 componentManager 属性", U.format("T", componentManager.getType().getClass()));
         this.componentManager = componentManager;
     }
 
+    @Override
     public T build(ComponentDescriptor<T> descriptor, ClassRealm realm, ComponentBuildListener listener)
             throws ComponentInstantiationException, ComponentLifecycleException {
         LinkedHashSet<ComponentDescriptor<?>> stack = STACK.get();
+
         if (stack.contains(descriptor)) {
             // create list of circularity
             List<ComponentDescriptor<?>> circularity = new ArrayList<ComponentDescriptor<?>>(stack);
@@ -96,7 +102,9 @@ public class XBeanComponentBuilder<T> implements ComponentBuilder<T> {
             }
             throw new ComponentInstantiationException(message);
         }
+
         stack.add(descriptor);
+
         try {
             if (listener != null) {
                 listener.beforeComponentCreate(descriptor, realm);

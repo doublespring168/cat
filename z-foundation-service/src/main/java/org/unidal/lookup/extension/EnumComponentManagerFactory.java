@@ -1,5 +1,7 @@
 package org.unidal.lookup.extension;
 
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 import org.apache.xbean.recipe.ObjectRecipe;
 import org.codehaus.plexus.MutablePlexusContainer;
 import org.codehaus.plexus.component.builder.XBeanComponentBuilder;
@@ -15,33 +17,61 @@ import org.unidal.helper.Splitters;
 
 import java.util.List;
 
+/**
+ * @author spring
+ */
 public class EnumComponentManagerFactory implements ComponentManagerFactory {
+    public EnumComponentManagerFactory() {
+        LogUtil.info("实例化组件管理工厂类 EnumComponentManagerFactory");
+    }
+
+    @Override
     public String getId() {
         return "enum";
     }
 
+    @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public ComponentManager<?> createComponentManager(MutablePlexusContainer container, LifecycleHandler lifecycleHandler,
                                                       ComponentDescriptor componentDescriptor, String role, String roleHint) {
-        return new EnumComponentManager(container, lifecycleHandler, componentDescriptor, role, roleHint);
+        LogUtil.info("即将实例化 EnumComponentManager", U.format(
+                "MutablePlexusContainer", U.toJSS(container),
+                "LifecycleHandler", U.toJSS(lifecycleHandler),
+                "ComponentDescriptor", U.toJSS(componentDescriptor),
+                "role", role,
+                "roleHint", roleHint
+        ));
+        EnumComponentManager enumComponentManager = new EnumComponentManager(container, lifecycleHandler, componentDescriptor, role, roleHint);
+        return enumComponentManager;
     }
 
     static class EnumComponentManager<T> extends AbstractComponentManager<T> {
+
         public EnumComponentManager(MutablePlexusContainer container, LifecycleHandler lifecycleHandler,
                                     ComponentDescriptor<T> componentDescriptor, String role, String roleHint) {
             super(container, lifecycleHandler, componentDescriptor, role, roleHint);
+            LogUtil.info("实例化 EnumComponentManager");
+
         }
 
+        @Override
         public synchronized void dispose() throws ComponentLifecycleException {
+            LogUtil.info("关闭 EnumComponentManager");
         }
 
+        @Override
         public synchronized void release(Object component) throws ComponentLifecycleException {
+            LogUtil.info("释放组件", U.format("component", component.getClass(), "component", U.toJSS(component)));
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public synchronized T getComponent() throws ComponentInstantiationException, ComponentLifecycleException {
+
             ComponentDescriptor<T> descriptor = getComponentDescriptor();
             Class<? extends T> enumClass = descriptor.getImplementationClass();
+
+            LogUtil.info("加载组件", U.format("ComponentDescriptor", U.toJSS(descriptor), "enumClass", enumClass.getClass()));
 
             if (!enumClass.isEnum()) {
                 throw new ComponentInstantiationException(String.format("%s is not an emum class!", enumClass));
@@ -53,11 +83,11 @@ public class EnumComponentManagerFactory implements ComponentManagerFactory {
 
             for (Object value : values) {
                 if (field.equals(value.toString())) {
-                    EnumValueHolder factory = new EnumValueHolder();
+                    EnumValueHolder enumValueHolder = new EnumValueHolder();
 
                     try {
                         XBeanComponentBuilder<T> builder = new XBeanComponentBuilder<T>(this);
-                        ObjectRecipe recipe = builder.createObjectRecipe((T) factory, descriptor, getRealm());
+                        ObjectRecipe recipe = builder.createObjectRecipe((T) enumValueHolder, descriptor, getRealm());
 
                         EnumValueHolder.put(value);
                         recipe.setFactoryMethod("get");

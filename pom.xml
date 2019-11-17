@@ -11,6 +11,7 @@
     <modules>
         <module>cat-client</module>
         <module>cat-core</module>
+        <module>cat-common</module>
         <module>cat-consumer</module>
         <module>cat-hadoop</module>
         <module>cat-home</module>
@@ -34,6 +35,11 @@
                 <groupId>com.dianping.cat</groupId>
                 <artifactId>cat-core</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dianping.cat</groupId>
+                <artifactId>cat-common</artifactId>
+                <version>6.0.0</version>
             </dependency>
             <dependency>
                 <groupId>com.dianping.cat</groupId>
@@ -194,6 +200,21 @@
                 <artifactId>c3p0</artifactId>
                 <version>0.9.5.1</version>
             </dependency>
+
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>1.2.58</version>
+            </dependency>
+
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.7.26</version>
+            </dependency>
+
+
         </dependencies>
     </dependencyManagement>
     <build>
@@ -230,10 +251,10 @@
                             <file>
                                 <name>.settings/org.eclipse.jdt.core.prefs</name>
                                 <content><![CDATA[
-org.eclipse.jdt.core.compiler.codegen.targetPlatform=1.7
+org.eclipse.jdt.core.compiler.codegen.targetPlatform=1.8
 eclipse.preferences.version=1
-org.eclipse.jdt.core.compiler.source=1.7
-org.eclipse.jdt.core.compiler.compliance=1.7
+org.eclipse.jdt.core.compiler.source=1.8
+org.eclipse.jdt.core.compiler.compliance=1.8
                         ]]></content>
                             </file>
                             <file>
@@ -279,8 +300,8 @@ org.eclipse.jdt.core.compiler.compliance=1.7
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.2</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
         </plugins>

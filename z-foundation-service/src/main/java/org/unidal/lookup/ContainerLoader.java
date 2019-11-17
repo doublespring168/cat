@@ -1,5 +1,7 @@
 package org.unidal.lookup;
 
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.ContainerConfiguration;
 import org.codehaus.plexus.DefaultContainerConfiguration;
 import org.codehaus.plexus.DefaultPlexusContainer;
@@ -35,41 +37,66 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class ContainerLoader {
+
+
     private static volatile DefaultPlexusContainer s_container;
 
     private static ConcurrentMap<Key, Object> m_components = new ConcurrentHashMap<Key, Object>();
 
     public static void destroyDefaultContainer() {
+
+
+        LogUtil.info("即将销毁 DefaultContainer");
+
         if (s_container != null) {
             m_components.clear();
             s_container.dispose();
             s_container = null;
+
         }
     }
 
+
     public static PlexusContainer getDefaultContainer() {
+
+        LogUtil.info("加载 PlexusContainer");
+
+        LogUtil.info("实例化 DefaultContainerConfiguration");
         DefaultContainerConfiguration configuration = new DefaultContainerConfiguration();
 
+        LogUtil.info("设置 plexus.xml配置文件");
         configuration.setContainerConfiguration("/META-INF/plexus/plexus.xml");
         return getDefaultContainer(configuration);
     }
 
     public static PlexusContainer getDefaultContainer(ContainerConfiguration configuration) {
+
+        LogUtil.info("加载 PlexusContainer");
         if (s_container == null) {
+
             // Two ContainerLoaders should share the same PlexusContainer
             Class<?> loaderClass = findLoaderClass();
 
             synchronized (ContainerLoader.class) {
+
+
                 if (loaderClass != null) {
+                    LogUtil.info("加载到 loaderClass", U.format("loaderClass", loaderClass));
                     s_container = getContainerFromLookupLibrary(loaderClass);
                 }
 
                 if (s_container == null) {
+
+                    LogUtil.info("不存在 PlexusContainer,即将实例化");
+
                     try {
                         preConstruction(configuration);
 
                         s_container = new DefaultPlexusContainer(configuration);
 
+                        LogUtil.info("已实例化 PlexusContainer", U.format("DefaultPlexusContainer", U.toJSS(s_container)));
+
+                        LogUtil.info("已实例化 PlexusContainer,即将执行构造器调用后操作");
                         postConstruction(s_container);
 
                         if (loaderClass != null) {
@@ -78,14 +105,21 @@ public class ContainerLoader {
                     } catch (Exception e) {
                         throw new RuntimeException("Unable to create Plexus container.", e);
                     }
+                } else {
+                    LogUtil.info("已存在 PlexusContainer,不需重新实例化");
                 }
             }
+        } else {
+            LogUtil.info("PlexusContainer 已存在,不需实例化");
         }
 
         return s_container;
     }
 
     private static Class<?> findLoaderClass() {
+
+
+        LogUtil.info("加载 com.site.lookup.ContainerLoader");
         String loaderClassName = "com.site.lookup.ContainerLoader";
         Class<?> loaderClass = null;
 
@@ -107,9 +141,11 @@ public class ContainerLoader {
     // for back compatible
     private static DefaultPlexusContainer getContainerFromLookupLibrary(Class<?> loaderClass) {
         try {
-            Field field = loaderClass.getDeclaredField("s_container");
 
+            LogUtil.info("从 loaderClass 中提取 PlexusContainer");
+            Field field = loaderClass.getDeclaredField("s_container");
             field.setAccessible(true);
+
             return (DefaultPlexusContainer) field.get(null);
         } catch (Exception e) {
             // ignore it
@@ -121,6 +157,9 @@ public class ContainerLoader {
 
     @SuppressWarnings("unchecked")
     private static void preConstruction(ContainerConfiguration configuration) throws Exception {
+
+
+        LogUtil.info("预处理 ContainerConfiguration", U.format("configuration", U.toJSS(configuration)));
         LifecycleHandler plexus = configuration.getLifecycleHandlerManager().getLifecycleHandler("plexus");
         Field field = Reflects.forField().getDeclaredField(AbstractLifecycleHandler.class, "beginSegment");
 
@@ -132,21 +171,26 @@ public class ContainerLoader {
 
         try {
             new ContainerConfigurationDecorator().process(configuration);
+            LogUtil.info("处理后 ContainerConfiguration", U.toJSS(configuration));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     private static void postConstruction(DefaultPlexusContainer container) {
+        LogUtil.info("为 DefaultPlexusContainer 注册组件管理工厂类");
         container.getComponentRegistry().registerComponentManagerFactory(new EnumComponentManagerFactory());
     }
 
     private static void setContainerToLookupLibrary(Class<?> loaderClass, PlexusContainer container) {
         try {
+
             Field field = loaderClass.getDeclaredField("s_container");
 
             field.setAccessible(true);
             field.set(null, container);
+
+
         } catch (Exception e) {
             // ignore it
             e.printStackTrace();
@@ -170,49 +214,86 @@ public class ContainerLoader {
     }
 
     static class ContainerConfigurationDecorator {
+
         private String m_defaultPath = "META-INF/plexus/plexus.xml";
 
+        public ContainerConfigurationDecorator() {
+            LogUtil.info("实例化 ContainerConfigurationDecorator");
+        }
+
         public void process(ContainerConfiguration configuration) throws Exception {
+
+
+            LogUtil.info("实例化 DocumentBuilderFactory");
             DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+            LogUtil.info("实例化 DocumentBuilder");
             DocumentBuilder builder = builderFactory.newDocumentBuilder();
-            Document doc = builder.newDocument();
-            String path = configuration.getContainerConfiguration();
+
+            LogUtil.info("创建 Document");
+            Document document = builder.newDocument();
+
+            LogUtil.info("实例化 ClassRealm");
             ClassRealm realm = new ClassWorld("plexus.core", Thread.currentThread().getContextClassLoader())
                     .getRealm("plexus.core");
-            Enumeration<URL> resources = realm.getResources(m_defaultPath);
-            Element root = doc.createElement("plexus");
 
-            root.appendChild(doc.createElement("components"));
-            doc.appendChild(root);
-            doc.setXmlStandalone(true);
+            Enumeration<URL> resources = realm.getResources(m_defaultPath);
+            LogUtil.info("读取到 resources", U.format("resources", U.toString(resources), "m_defaultPath", m_defaultPath));
+
+            LogUtil.info("创建document root节点");
+            Element root = document.createElement("plexus");
+
+            LogUtil.info("root节点添加components节点");
+            root.appendChild(document.createElement("components"));
+            document.appendChild(root);
+            document.setXmlStandalone(true);
+
+            LogUtil.info("document添加root节点", U.format("document", U.toString(document)));
+
+
+            String path = configuration.getContainerConfiguration();
+
+            LogUtil.info("合并ContainerConfiguration中指定的配置文件", U.format("path", path));
 
             if (path != null && !path.endsWith(m_defaultPath)) {
                 URL url = realm.getResource(path);
-
                 if (url != null) {
-                    fillFrom(doc, builder, url);
+                    LogUtil.info("合并xml文件", U.format("path", U.toString(url)));
+                    fillFrom(document, builder, url);
                 }
             }
 
+            LogUtil.info("合并resources下默认配置文件", U.format("resources", U.toString(resources)));
+
             for (URL url : Collections.list(resources)) {
-                fillFrom(doc, builder, url);
+                LogUtil.info("合并resources下默认配置文件", U.format("url", url.toString()));
+                fillFrom(document, builder, url);
             }
 
-            if (doc.getDocumentElement().hasChildNodes()) {
+            LogUtil.info("转换document为新的格式", U.format("resources", U.toString(resources)));
+            if (document.getDocumentElement().hasChildNodes()) {
                 // Use a Transformer for output
+
+                LogUtil.info("实例化 TransformerFactory");
                 TransformerFactory transforerFactory = TransformerFactory.newInstance();
+                LogUtil.info("实例化 Transformer");
                 Transformer transformer = transforerFactory.newTransformer();
-                File tmp = File.createTempFile("plexus-", ".xml");
-                StreamResult result = new StreamResult(new FileOutputStream(tmp));
+                File tempFile = File.createTempFile("plexus-", ".xml");
+                LogUtil.info("创建plexus xml临时文件", U.format("tempFile", U.toString(tempFile)));
+                StreamResult result = new StreamResult(new FileOutputStream(tempFile));
 
-                tmp.deleteOnExit();
-                transformer.transform(new DOMSource(doc), result);
+                tempFile.deleteOnExit();
+                LogUtil.info("document内容写入tempFile");
+                transformer.transform(new DOMSource(document), result);
 
-                configuration.setContainerConfigurationURL(tmp.toURI().toURL());
+                URL tmpUrl = tempFile.toURI().toURL();
+                LogUtil.info("设置ContainerConfigurationURL为临时文件URL", U.format("tmpUrl", tmpUrl.toString()));
+                configuration.setContainerConfigurationURL(tmpUrl);
             }
         }
 
         private void fillFrom(Document to, DocumentBuilder builder, URL url) throws Exception {
+
+            LogUtil.info("合并xml配置文件", U.format("url", U.toString(url)));
             InputStream in = url.openStream();
             Document from = builder.parse(in);
 
