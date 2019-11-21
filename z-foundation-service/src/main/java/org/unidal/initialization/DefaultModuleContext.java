@@ -89,6 +89,7 @@ public class DefaultModuleContext implements ModuleContext, Contextualizable {
 
     @Override
     public void error(String message, Throwable e) {
+        LogUtil.info("异常错误", U.format("message", message, "exception", U.toString(e)));
         m_logger.error(message, e);
     }
 
@@ -138,5 +139,18 @@ public class DefaultModuleContext implements ModuleContext, Contextualizable {
 
     public PlexusContainer getContainer() {
         return m_container;
+    }
+
+
+    public PlexusContainer getM_container() {
+        return m_container;
+    }
+
+    public Map<String, Object> getM_attributes() {
+        return m_attributes;
+    }
+
+    public Logger getM_logger() {
+        return m_logger;
     }
 }

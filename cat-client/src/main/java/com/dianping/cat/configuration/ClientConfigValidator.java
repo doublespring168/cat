@@ -22,75 +22,80 @@ import com.dianping.cat.configuration.client.entity.ClientConfig;
 import com.dianping.cat.configuration.client.entity.Domain;
 import com.dianping.cat.configuration.client.entity.Server;
 import com.dianping.cat.configuration.client.transform.DefaultValidator;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 
 import java.text.MessageFormat;
 import java.util.Date;
 
 public class ClientConfigValidator extends DefaultValidator {
-	private ClientConfig m_config;
+    private ClientConfig m_config;
 
-	private String getLocalAddress() {
-		return NetworkInterfaceManager.INSTANCE.getLocalHostAddress();
-	}
+    private void log(String severity, String message) {
+        MessageFormat format = new MessageFormat("[{0,date,MM-dd HH:mm:ss.sss}] [{1}] [{2}] {3}");
 
-	private void log(String severity, String message) {
-		MessageFormat format = new MessageFormat("[{0,date,MM-dd HH:mm:ss.sss}] [{1}] [{2}] {3}");
+        System.out.println(format.format(new Object[]{new Date(), severity, "cat", message}));
+    }
 
-		System.out.println(format.format(new Object[] { new Date(), severity, "cat", message }));
-	}
+    @Override
+    public void visitConfig(ClientConfig config) {
 
-	@Override
-	public void visitConfig(ClientConfig config) {
-		config.setMode("client");
+        LogUtil.info("开始验证ClientConfig配置", U.format("ClientConfig", U.toJSS(config)));
 
-		if (config.getServers().size() == 0) {
-			config.setEnabled(false);
-			log("WARN", "CAT client was disabled due to no CAT servers configured!");
-		} else if (!config.isEnabled()) {
-			log("WARN", "CAT client was globally disabled!");
-		}
+        config.setMode("client");
 
-		m_config = config;
-		super.visitConfig(config);
+        if (config.getServers().size() == 0) {
+            config.setEnabled(false);
+            LogUtil.info("CAT servers不存在,设置client为disabled");
+        } else if (!config.isEnabled()) {
+            LogUtil.info("当前未开启client,设置client为disabled");
+        }
 
-		if (m_config.isEnabled()) {
-			for (Domain domain : m_config.getDomains().values()) {
-				if (!domain.isEnabled()) {
-					m_config.setEnabled(false);
-					log("WARN", "CAT client was disabled in domain(" + domain.getId() + ") explicitly!");
-				}
+        m_config = config;
+        super.visitConfig(config);
 
-				break; // for first domain only
-			}
-		}
-	}
+        if (m_config.isEnabled()) {
+            for (Domain domain : m_config.getDomains().values()) {
+                if (!domain.isEnabled()) {
+                    m_config.setEnabled(false);
+                    LogUtil.info("client 端配置不连接当前 domain", U.format("domain", U.toJSS(domain)));
+                }
+                LogUtil.info("有domain供当前client连接");
+                break; // for first domain only
+            }
+        }
+    }
 
-	@Override
-	public void visitDomain(Domain domain) {
-		super.visitDomain(domain);
+    @Override
+    public void visitDomain(Domain domain) {
+        super.visitDomain(domain);
 
-		// set default values
-		if (domain.getEnabled() == null) {
-			domain.setEnabled(true);
-		}
+        // set default values
+        if (domain.getEnabled() == null) {
+            domain.setEnabled(true);
+        }
 
-		if (domain.getIp() == null) {
-			domain.setIp(getLocalAddress());
-		}
-	}
+        if (domain.getIp() == null) {
+            domain.setIp(getLocalAddress());
+        }
+    }
 
-	@Override
-	public void visitServer(Server server) {
-		super.visitServer(server);
+    private String getLocalAddress() {
+        return NetworkInterfaceManager.INSTANCE.getLocalHostAddress();
+    }
 
-		// set default values
-		if (server.getPort() == null) {
-			server.setPort(2280);
-		}
+    @Override
+    public void visitServer(Server server) {
+        super.visitServer(server);
 
-		if (server.getEnabled() == null) {
-			server.setEnabled(true);
-		}
-	}
+        // set default values
+        if (server.getPort() == null) {
+            server.setPort(2280);
+        }
+
+        if (server.getEnabled() == null) {
+            server.setEnabled(true);
+        }
+    }
 
 }

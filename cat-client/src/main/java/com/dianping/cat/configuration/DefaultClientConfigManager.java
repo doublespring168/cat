@@ -24,6 +24,7 @@ import com.dianping.cat.configuration.client.entity.Domain;
 import com.dianping.cat.configuration.client.entity.Server;
 import com.dianping.cat.configuration.client.transform.DefaultSaxParser;
 import com.dianping.cat.message.spi.MessageTree;
+import com.doublespring.common.U;
 import com.doublespring.log.LogUtil;
 import com.site.helper.JsonBuilder;
 import com.site.helper.Splitters;
@@ -42,287 +43,340 @@ import java.util.*;
 @Named(type = ClientConfigManager.class)
 public class DefaultClientConfigManager implements LogEnabled, ClientConfigManager, Initializable {
 
-	private static final String PROPERTIES_FILE = "/META-INF/app.properties";
+    private static final String PROPERTIES_FILE = "/META-INF/app.properties";
 
-	private ClientConfig m_config;
+    private ClientConfig m_config;
 
-	private volatile double m_sampleRate = 1d;
+    private volatile double m_sampleRate = 1d;
 
-	private volatile boolean m_block = false;
+    private volatile boolean m_block = false;
 
-	private String m_routers;
+    private String m_routers;
 
-	private JsonBuilder m_jsonBuilder = new JsonBuilder();
+    private JsonBuilder m_jsonBuilder = new JsonBuilder();
 
-	private AtomicTreeParser m_atomicTreeParser = new AtomicTreeParser();
+    private AtomicTreeParser m_atomicTreeParser = new AtomicTreeParser();
 
-	private Map<String, List<Integer>> m_longConfigs = new LinkedHashMap<String, List<Integer>>();
+    private Map<String, List<Integer>> m_longConfigs = new LinkedHashMap<String, List<Integer>>();
 
-	private Logger m_logger;
+    private Logger m_logger;
 
-	@Override
-	public void enableLogging(Logger logger) {
-		m_logger = logger;
-	}
+    @Override
+    public void enableLogging(Logger logger) {
+        m_logger = logger;
+    }
 
-	@Override
-	public Domain getDomain() {
-		Domain domain = null;
+    @Override
+    public void initialize() throws InitializationException {
 
-		if (m_config != null) {
-			Map<String, Domain> domains = m_config.getDomains();
+        String xml = Cat.getCatHome() + "client.xml";
 
-			domain = domains.isEmpty() ? null : domains.values().iterator().next();
-		}
+        LogUtil.info("初始化 DefaultClientConfigManager", U.format("client.xml", xml));
 
-		if (domain != null) {
-			return domain;
-		} else {
-			return new Domain("UNKNOWN").setEnabled(false);
-		}
-	}
+        File configFile = new File(xml);
+        initialize(configFile);
+    }
 
-	@Override
-	public int getMaxMessageLength() {
-		if (m_config == null) {
-			return 5000;
-		} else {
-			return getDomain().getMaxMessageSize();
-		}
-	}
+    @Override
+    public Domain getDomain() {
 
-	@Override
-	public String getRouters() {
-		if (m_routers == null) {
-			refreshConfig();
-		}
-		return m_routers;
-	}
+        LogUtil.info("加载Domain", U.format("m_config", U.toJSS(m_config)));
 
-	public double getSampleRatio() {
-		return m_sampleRate;
-	}
+        Domain domain = null;
 
-	private String getServerConfigUrl() {
-		if (m_config == null) {
-			return null;
-		} else {
-			List<Server> servers = m_config.getServers();
-			int size = servers.size();
-			int index = (int) (size * Math.random());
+        if (m_config != null) {
+            Map<String, Domain> domains = m_config.getDomains();
 
-			if (index >= 0 && index < size) {
-				Server server = servers.get(index);
+            domain = domains.isEmpty() ? null : domains.values().iterator().next();
+        }
 
-				Integer httpPort = server.getHttpPort();
+        if (domain != null) {
+            LogUtil.info("加载到Domain", U.format("domain", U.toJSS(domain)));
+            return domain;
+        } else {
+            Domain unknown = new Domain("UNKNOWN").setEnabled(false);
+            LogUtil.info("没有加载到Domain", U.format("domain", U.toJSS(unknown)));
+            return unknown;
+        }
+    }
 
-				if (httpPort == null || httpPort == 0) {
-					httpPort = 8080;
-				}
-				return String.format("http://%s:%d/cat/s/router?domain=%s&ip=%s&op=json", server.getIp().trim(), httpPort,
-										getDomain().getId(), NetworkInterfaceManager.INSTANCE.getLocalHostAddress());
-			}
-		}
-		return null;
-	}
+    private ClientConfig loadConfigFromEnviroment() {
+        String appName = loadProjectName();
 
-	@Override
-	public List<Server> getServers() {
-		if (m_config == null) {
-			return Collections.emptyList();
-		} else {
-			return m_config.getServers();
-		}
-	}
+        if (appName != null) {
+            ClientConfig config = new ClientConfig();
+            config.addDomain(new Domain(appName));
 
-	@Override
-	public int getTaggedTransactionCacheSize() {
-		return 1024;
-	}
+            LogUtil.info("加载到 ClientConfig", U.format("config", U.toJSS(config)));
 
-	@Override
-	public void initialize() throws InitializationException {
-		String xml = Cat.getCatHome() + "client.xml";
-		File configFile = new File(xml);
+            return config;
+        }
+        LogUtil.info("加载 ClientConfig 失败");
+        return null;
+    }
 
-		LogUtil.info("client xml path " + xml);
-		initialize(configFile);
-	}
+    @Override
+    public int getMaxMessageLength() {
+        if (m_config == null) {
+            return 5000;
+        } else {
+            return getDomain().getMaxMessageSize();
+        }
+    }
 
-	@Override
-	public void initialize(File configFile) throws InitializationException {
-		try {
-			ClientConfig globalConfig = null;
-			ClientConfig warConfig = null;
+    private String loadProjectName() {
+        String appName = null;
+        InputStream in = null;
+        try {
+            in = Thread.currentThread().getContextClassLoader().getResourceAsStream(PROPERTIES_FILE);
 
-			if (configFile != null) {
-				if (configFile.exists()) {
-					String xml = Files.forIO().readFrom(configFile.getCanonicalFile(), "utf-8");
+            if (in == null) {
+                in = Cat.class.getResourceAsStream(PROPERTIES_FILE);
+            }
+            if (in != null) {
+                Properties prop = new Properties();
 
-					globalConfig = DefaultSaxParser.parse(xml);
-					LogUtil.info(String.format("Global config file(%s) found.", configFile));
-				} else {
-					LogUtil.info(String.format("Global config file(%s) not found, IGNORED.", configFile));
-				}
-			}
+                prop.load(in);
 
-			// load the client configure from Java class-path
-			warConfig = loadConfigFromEnviroment();
+                appName = prop.getProperty("app.name");
+                if (appName != null) {
+                    LogUtil.info(String.format("加载到 domain name %s from app.properties.", appName));
+                } else {
+                    LogUtil.info(String.format("无法从 app.properties 中加载 app.name"));
+                    return null;
+                }
+            } else {
+                LogUtil.info("app.properties 不存在", U.format("PROPERTIES_FILE", PROPERTIES_FILE));
+            }
+        } catch (Exception e) {
+            m_logger.error(e.getMessage(), e);
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (Exception e) {
+                }
+            }
+        }
+        return appName;
+    }
 
-			// merge the two configures together to make it effected
-			if (globalConfig != null && warConfig != null) {
-				globalConfig.accept(new ClientConfigMerger(warConfig));
-			}
+    @Override
+    public String getRouters() {
+        if (m_routers == null) {
+            refreshConfig();
+        }
+        return m_routers;
+    }
 
-			if (warConfig != null) {
-				warConfig.accept(new ClientConfigValidator());
-			}
+    @Override
+    public double getSampleRatio() {
+        return m_sampleRate;
+    }
 
-			m_config = warConfig;
-			refreshConfig();
-		} catch (Exception e) {
-			throw new InitializationException(e.getMessage(), e);
-		}
-	}
+    private String getServerConfigUrl() {
+        if (m_config == null) {
+            return null;
+        } else {
+            List<Server> servers = m_config.getServers();
+            int size = servers.size();
+            int index = (int) (size * Math.random());
 
-	@Override
-	public boolean isAtomicMessage(MessageTree tree) {
-		return m_atomicTreeParser.isAtomicMessage(tree);
-	}
+            LogUtil.info("加载到servers", U.format("servers", U.toJSS(servers)));
 
-	public boolean isBlock() {
-		return m_block;
-	}
+            if (index >= 0 && index < size) {
+                Server server = servers.get(index);
 
-	@Override
-	public boolean isCatEnabled() {
-		if (m_config == null) {
-			return false;
-		} else {
-			return m_config.isEnabled();
-		}
-	}
+                LogUtil.info("随机选择一个server", U.format("server", U.toJSS(server)));
 
-	@Override
-	public boolean isDumpLocked() {
-		if (m_config == null) {
-			return false;
-		} else {
-			return m_config.isDumpLocked();
-		}
-	}
 
-	private ClientConfig loadConfigFromEnviroment() {
-		String appName = loadProjectName();
+                Integer httpPort = server.getHttpPort();
 
-		if (appName != null) {
-			ClientConfig config = new ClientConfig();
+                if (httpPort == null || httpPort == 0) {
+                    httpPort = 8080;
+                }
+                String result = String.format("http://%s:%d/cat/s/router?domain=%s&ip=%s&op=json", server.getIp().trim(), httpPort,
+                        getDomain().getId(), NetworkInterfaceManager.INSTANCE.getLocalHostAddress());
+                LogUtil.info("加载server返参", U.format("url", result));
 
-			config.addDomain(new Domain(appName));
-			return config;
-		}
-		return null;
-	}
+                return result;
+            }
+        }
+        LogUtil.info("未加载到server");
+        return null;
+    }
 
-	private String loadProjectName() {
-		String appName = null;
-		InputStream in = null;
-		try {
-			in = Thread.currentThread().getContextClassLoader().getResourceAsStream(PROPERTIES_FILE);
+    @Override
+    public List<Server> getServers() {
+        if (m_config == null) {
+            return Collections.emptyList();
+        } else {
+            return m_config.getServers();
+        }
+    }
 
-			if (in == null) {
-				in = Cat.class.getResourceAsStream(PROPERTIES_FILE);
-			}
-			if (in != null) {
-				Properties prop = new Properties();
+    @Override
+    public int getTaggedTransactionCacheSize() {
+        return 1024;
+    }
 
-				prop.load(in);
 
-				appName = prop.getProperty("app.name");
-				if (appName != null) {
-					LogUtil.info(String.format("Find domain name %s from app.properties.", appName));
-				} else {
-					LogUtil.info(String.format("Can't find app.name from app.properties."));
-					return null;
-				}
-			} else {
-				LogUtil.info(String.format("Can't find app.properties in %s", PROPERTIES_FILE));
-			}
-		} catch (Exception e) {
-			m_logger.error(e.getMessage(), e);
-		} finally {
-			if (in != null) {
-				try {
-					in.close();
-				} catch (Exception e) {
-				}
-			}
-		}
-		return appName;
-	}
+    @Override
+    public void initialize(File configFile) throws InitializationException {
+        try {
+            ClientConfig globalConfig = null;
+            ClientConfig warConfig = null;
 
-	public void refreshConfig() {
-		String url = getServerConfigUrl();
+            if (configFile != null) {
+                if (configFile.exists()) {
+                    String xml = Files.forIO().readFrom(configFile.getCanonicalFile(), "utf-8");
 
-		try {
-			InputStream inputstream = Urls.forIO().readTimeout(2000).connectTimeout(1000).openStream(url);
-			String content = Files.forIO().readFrom(inputstream, "utf-8");
-			KVConfig routerConfig = (KVConfig) m_jsonBuilder.parse(content.trim(), KVConfig.class);
+                    globalConfig = DefaultSaxParser.parse(xml);
+                    LogUtil.info("加载到client.xml文件", U.format("client.xml", configFile.getAbsolutePath()));
+                } else {
+                    LogUtil.info("client.xml文件不存在", U.format("client.xml", configFile.getAbsolutePath()));
+                }
+            } else {
+                LogUtil.info("client.xml文件不存在", U.format("client.xml", configFile.getAbsolutePath()));
+            }
 
-			m_routers = routerConfig.getValue("routers");
-			m_block = Boolean.valueOf(routerConfig.getValue("block").trim());
+            // load the client configure from Java class-path
+            warConfig = loadConfigFromEnviroment();
 
-			m_sampleRate = Double.valueOf(routerConfig.getValue("sample").trim());
-			if (m_sampleRate <= 0) {
-				m_sampleRate = 0;
-			}
+            LogUtil.info("加载到 warConfig", U.format("warConfig", U.toJSS(warConfig)));
 
-			String startTypes = routerConfig.getValue("startTransactionTypes");
-			String matchTypes = routerConfig.getValue("matchTransactionTypes");
+            // merge the two configures together to make it effected
+            if (globalConfig == null) {
+                LogUtil.info("globalConfig 不存在");
+            }
 
-			m_atomicTreeParser.init(startTypes, matchTypes);
+            if (warConfig == null) {
+                LogUtil.info("warConfig 不存在");
+            }
 
-			for (ProblemLongType longType : ProblemLongType.values()) {
-				final String name = longType.getName();
-				String propertyName = name + "s";
-				String values = routerConfig.getValue(propertyName);
+            if (globalConfig != null && warConfig != null) {
+                LogUtil.info("合并globalConfig和warConfig", U.format("globalConfig", U.toJSS(globalConfig), "warConfig", U.toJSS(warConfig)));
+                globalConfig.accept(new ClientConfigMerger(warConfig));
+            }
 
-				if (values != null) {
-					List<String> valueStrs = Splitters.by(',').trim().split(values);
-					List<Integer> thresholds = new LinkedList<Integer>();
+            if (warConfig != null) {
+                LogUtil.info("");
+                warConfig.accept(new ClientConfigValidator());
+            }
 
-					for (String valueStr : valueStrs) {
-						try {
-							thresholds.add(Integer.parseInt(valueStr));
-						} catch (Exception e) {
-							// ignore
-						}
-					}
-					if (!thresholds.isEmpty()) {
-						m_longConfigs.put(name, thresholds);
-					}
-				}
-			}
-		} catch (Exception e) {
-			m_logger.warn("error when connect cat server config url " + url);
-		}
-	}
+            m_config = warConfig;
 
-	@Override
-	public int getLongThresholdByDuration(String key, int duration) {
-		List<Integer> values = m_longConfigs.get(key);
+            refreshConfig();
+        } catch (Exception e) {
+            LogUtil.info("DefaultClientConfigManager 初始化抛出异常", U.format("Exception", U.toString(e)));
+            throw new InitializationException(e.getMessage(), e);
+        }
+    }
 
-		if (values != null) {
-			for (int i = values.size() - 1; i >= 0; i--) {
-				int userThreshold = values.get(i);
+    @Override
+    public boolean isAtomicMessage(MessageTree tree) {
+        return m_atomicTreeParser.isAtomicMessage(tree);
+    }
 
-				if (duration >= userThreshold) {
-					return userThreshold;
-				}
-			}
-		}
+    @Override
+    public boolean isBlock() {
+        return m_block;
+    }
 
-		return -1;
-	}
+    @Override
+    public boolean isCatEnabled() {
+        if (m_config == null) {
+            return false;
+        } else {
+            return m_config.isEnabled();
+        }
+    }
+
+    @Override
+    public boolean isDumpLocked() {
+        if (m_config == null) {
+            return false;
+        } else {
+            return m_config.isDumpLocked();
+        }
+    }
+
+
+    @Override
+    public void refreshConfig() {
+
+
+        String url = getServerConfigUrl();
+        LogUtil.info("刷新ClientConfig", U.format("serverConfigUrl", url));
+
+
+        try {
+            InputStream inputstream = Urls.forIO().readTimeout(2000).connectTimeout(1000).openStream(url);
+            String content = Files.forIO().readFrom(inputstream, "utf-8");
+            KVConfig routerConfig = (KVConfig) m_jsonBuilder.parse(content.trim(), KVConfig.class);
+
+            LogUtil.info("解析配置文件", U.format("routerConfig", U.toJSS(routerConfig)));
+
+            m_routers = routerConfig.getValue("routers");
+            m_block = Boolean.valueOf(routerConfig.getValue("block").trim());
+
+            m_sampleRate = Double.valueOf(routerConfig.getValue("sample").trim());
+
+            LogUtil.info("更新配置属性", U.format("m_routers", m_routers, "m_block", m_block, "m_sampleRate", m_sampleRate));
+            if (m_sampleRate <= 0) {
+                m_sampleRate = 0;
+            }
+
+            String startTypes = routerConfig.getValue("startTransactionTypes");
+            String matchTypes = routerConfig.getValue("matchTransactionTypes");
+
+            m_atomicTreeParser.init(startTypes, matchTypes);
+
+
+            LogUtil.info("即将更新 m_longConfigs", U.format("m_longConfigs", U.toJSS(m_longConfigs)));
+            for (ProblemLongType longType : ProblemLongType.values()) {
+                final String name = longType.getName();
+                String propertyName = name + "s";
+                String values = routerConfig.getValue(propertyName);
+
+                if (values != null) {
+                    List<String> valueStrs = Splitters.by(',').trim().split(values);
+                    List<Integer> thresholds = new LinkedList<Integer>();
+
+                    for (String valueStr : valueStrs) {
+                        try {
+                            thresholds.add(Integer.parseInt(valueStr));
+                        } catch (Exception e) {
+                            // ignore
+                        }
+                    }
+                    if (!thresholds.isEmpty()) {
+                        m_longConfigs.put(name, thresholds);
+                    }
+                }
+            }
+            LogUtil.info("更新后 m_longConfigs", U.format("m_longConfigs", U.toJSS(m_longConfigs)));
+
+        } catch (Exception e) {
+            LogUtil.info("连接  cat server 失败", U.format("url", url));
+        }
+    }
+
+    @Override
+    public int getLongThresholdByDuration(String key, int duration) {
+        List<Integer> values = m_longConfigs.get(key);
+
+        if (values != null) {
+            for (int i = values.size() - 1; i >= 0; i--) {
+                int userThreshold = values.get(i);
+
+                if (duration >= userThreshold) {
+                    return userThreshold;
+                }
+            }
+        }
+
+        return -1;
+    }
 
 }
