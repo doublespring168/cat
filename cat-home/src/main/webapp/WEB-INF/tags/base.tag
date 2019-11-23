@@ -54,8 +54,8 @@
 					<!-- #section:basics/navbar.layout.brand -->
 					<i class="navbar-brand">
 						<span>CAT</span>
-						<small style="font-size:65%">
-							（Central Application Tracking）
+						<small style="font-size:60%">
+							（Central Tracking Platform）
 						</small>
 					<button class="btn btn-success btn-sm" id="nav_application" >
 						<i class="ace-icon fa fa-signal"></i>Application
@@ -73,20 +73,15 @@
 					<button class="btn btn-inverse btn-sm" id="nav_config">
 						<i class="ace-icon fa fa-cogs"></i>Configs
 					</button>
-					<button class="btn btn-yellow btn-sm" id="nav_document">
-						<i class="ace-icon fa fa-cogs"></i>Documents
-					</button>
+						<%--<button class="btn btn-yellow btn-sm" id="nav_document">
+                            <i class="ace-icon fa fa-cogs"></i>Documents
+                        </button>--%>
 					</i>
 				</div>
 				<!-- #section:basics/navbar.dropdown -->
 				<div class="navbar-buttons navbar-header pull-right" role="navigation">
 				<ul class="nav ace-nav" style="height:auto;">
-					<li class="light-blue">
-						<a href="http://github.com/dianping/cat/" target="_blank">
-							<i class="ace-icon glyphicon glyphicon-star"></i>
-							<span>Star</span>
-						</a>
-					</li>
+
 					<li class="light-blue" >
 						<a data-toggle="dropdown" href="#" class="dropdown-toggle">
 							<span class="user-info" style="max-width:200px">
@@ -112,7 +107,7 @@
 				//override dialog's title function to allow for HTML titles
 				$.widget("ui.dialog", $.extend({}, $.ui.dialog.prototype, {
 					_title: function(title) {
-						var $title = this.options.title || '&nbsp;'
+						var $title = this.options.title || '&nbsp;';
 						if( ("title_html" in this.options) && this.options.title_html == true )
 							title.html($title);
 						else title.text($title);
@@ -177,7 +172,7 @@
 						//add custom classes and icons
 						$(this)
 						.next().addClass('btn btn-success').html('<i class="ace-icon fa fa-plus"></i>')
-						.next().addClass('btn btn-danger').html('<i class="ace-icon fa fa-minus"></i>')
+								.next().addClass('btn btn-danger').html('<i class="ace-icon fa fa-minus"></i>');
 						
 						//larger buttons on touch devices
 						if('touchstart' in document.documentElement) 
