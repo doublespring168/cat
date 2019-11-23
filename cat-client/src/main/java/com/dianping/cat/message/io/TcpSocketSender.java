@@ -236,7 +236,7 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
             } else {
                 try {
                     //Thread.sleep(5);
-                    Thread.sleep(5 * 1000);
+                    Thread.sleep(30 * 1000);
                 } catch (Exception e) {
                     m_active = false;
                 }

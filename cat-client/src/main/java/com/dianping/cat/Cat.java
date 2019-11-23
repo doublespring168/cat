@@ -147,6 +147,8 @@ public class Cat {
 
     // this should be called during application initialization time
     public static void initialize(File configFile) {
+
+        LogUtil.info("即将实例化 Cat", U.format("configFile", configFile.getAbsolutePath()));
         try {
             if (!s_init) {
                 synchronized (s_instance) {
