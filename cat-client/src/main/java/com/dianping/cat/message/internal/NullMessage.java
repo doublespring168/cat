@@ -18,17 +18,10 @@
  */
 package com.dianping.cat.message.internal;
 
+import com.dianping.cat.message.*;
+
 import java.util.Collections;
 import java.util.List;
-
-import com.dianping.cat.message.Event;
-import com.dianping.cat.message.ForkedTransaction;
-import com.dianping.cat.message.Heartbeat;
-import com.dianping.cat.message.Message;
-import com.dianping.cat.message.Metric;
-import com.dianping.cat.message.TaggedTransaction;
-import com.dianping.cat.message.Trace;
-import com.dianping.cat.message.Transaction;
 
 public enum NullMessage implements Transaction, Event, Metric, Trace, Heartbeat, ForkedTransaction, TaggedTransaction {
 	TRANSACTION,
@@ -100,10 +93,12 @@ public enum NullMessage implements Transaction, Event, Metric, Trace, Heartbeat,
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public String getParentMessageId() {
 		return null;
 	}
 
+	@Override
 	public String getRootMessageId() {
 		return null;
 	}

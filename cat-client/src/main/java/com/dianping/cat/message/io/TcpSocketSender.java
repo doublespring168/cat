@@ -31,6 +31,7 @@ import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.message.spi.codec.NativeMessageCodec;
 import com.dianping.cat.status.StatusExtension;
 import com.dianping.cat.status.StatusExtensionRegister;
+import com.doublespring.common.U;
 import com.doublespring.log.LogUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
@@ -50,260 +51,281 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Named
 public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 
-	public static final int SIZE = ApplicationSettings.getQueueSize();
+    public static final int SIZE = ApplicationSettings.getQueueSize();
+    public static final long HOUR = 1000 * 60 * 60L;
+    private static final int MAX_CHILD_NUMBER = 200;
+    private static final int MAX_DURATION = 1000 * 30;
+    private MessageCodec m_codec = new NativeMessageCodec();
 
-	private static final int MAX_CHILD_NUMBER = 200;
+    @Inject
+    private MessageStatistics m_statistics;
 
-	private static final int MAX_DURATION = 1000 * 30;
+    @Inject
+    private ClientConfigManager m_configManager;
 
-	public static final long HOUR = 1000 * 60 * 60L;
+    @Inject
+    private MessageIdFactory m_factory;
 
-	private MessageCodec m_codec = new NativeMessageCodec();
+    private MessageQueue m_queue = new DefaultMessageQueue(SIZE);
 
-	@Inject
-	private MessageStatistics m_statistics;
+    private MessageQueue m_atomicQueue = new DefaultMessageQueue(SIZE);
 
-	@Inject
-	private ClientConfigManager m_configManager;
+    private ChannelManager m_channelManager;
 
-	@Inject
-	private MessageIdFactory m_factory;
+    private Logger m_logger;
 
-	private MessageQueue m_queue = new DefaultMessageQueue(SIZE);
+    private boolean m_active;
 
-	private MessageQueue m_atomicQueue = new DefaultMessageQueue(SIZE);
+    private AtomicInteger m_errors = new AtomicInteger();
 
-	private ChannelManager m_channelManager;
+    @Override
+    public void enableLogging(Logger logger) {
+        m_logger = logger;
+    }
 
-	private Logger m_logger;
+    @Override
+    public String getName() {
+        return "TcpSocketSender";
+    }
 
-	private boolean m_active;
+    @Override
+    public void shutdown() {
+        m_active = false;
+        m_channelManager.shutdown();
+    }
 
-	private AtomicInteger m_errors = new AtomicInteger();
+    @Override
+    public void initialize(List<InetSocketAddress> addresses) {
+        m_channelManager = new ChannelManager(m_logger, addresses, m_configManager, m_factory);
 
-	@Override
-	public void enableLogging(Logger logger) {
-		m_logger = logger;
-	}
+        LogUtil.info("实例化 TcpSocketSender");
 
-	@Override
-	public String getName() {
-		return "TcpSocketSender";
-	}
+        Threads.forGroup("cat-TcpSocketSender").start(this);
+        Threads.forGroup("cat-TcpSocketSender").start(m_channelManager);
 
-	@Override
-	public void initialize(List<InetSocketAddress> addresses) {
-		m_channelManager = new ChannelManager(m_logger, addresses, m_configManager, m_factory);
 
-		Threads.forGroup("cat").start(this);
-		Threads.forGroup("cat").start(m_channelManager);
+        LogUtil.info("注册 ShutdownHook 监听线程");
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                LogUtil.info("系统即将关闭,关闭 cat client");
+                shutdown();
+            }
+        });
 
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				LogUtil.info("shut down cat client in runtime shut down hook!");
-				shutdown();
-			}
-		});
 
-		StatusExtensionRegister.getInstance().register(new StatusExtension() {
+        LogUtil.info("注册 StatusExtension 监听器");
+        StatusExtensionRegister.getInstance().register(new StatusExtension() {
 
-			@Override
-			public String getDescription() {
-				return "client-send-queue";
-			}
+            @Override
+            public String getId() {
+                return "client-send-queue";
+            }
 
-			@Override
-			public String getId() {
-				return "client-send-queue";
-			}
+            @Override
+            public String getDescription() {
+                return "client-send-queue";
+            }
 
-			@Override
-			public Map<String, String> getProperties() {
-				Map<String, String> map = new HashMap<String, String>();
+            @Override
+            public Map<String, String> getProperties() {
+                Map<String, String> map = new HashMap<String, String>();
 
-				map.put("msg-queue", String.valueOf(m_queue.size()));
-				map.put("atomic-queue", String.valueOf(m_queue.size()));
-				return map;
-			}
-		});
-	}
+                map.put("msg-queue", String.valueOf(m_queue.size()));
+                map.put("atomic-queue", String.valueOf(m_queue.size()));
+                return map;
+            }
+        });
+    }
 
-	private void logQueueFullInfo(MessageTree tree) {
-		if (m_statistics != null) {
-			m_statistics.onOverflowed(tree);
-		}
+    @Override
+    public void send(MessageTree tree) {
+        if (!m_configManager.isBlock()) {
+            double sampleRatio = m_configManager.getSampleRatio();
 
-		int count = m_errors.incrementAndGet();
+            if (tree.canDiscard() && sampleRatio < 1.0 && (!tree.isHitSample())) {
+                processTreeInClient(tree);
+            } else {
+                offer(tree);
+            }
+        }
+    }
 
-		if (count % 1000 == 0 || count == 1) {
-			m_logger.error("Message queue is full in tcp socket sender! Count: " + count);
-		}
+    private void processTreeInClient(MessageTree tree) {
+        LogUtil.info("本地聚合 MessageTree");
+        LocalAggregator.aggregate(tree);
+    }
 
-		tree = null;
-	}
+    @Override
+    public void run() {
+        m_active = true;
 
-	private MessageTree mergeTree(MessageQueue handler) {
-		int max = MAX_CHILD_NUMBER;
-		DefaultTransaction tran = new DefaultTransaction("System", "_CatMergeTree", null);
-		MessageTree first = handler.poll();
+        LogUtil.info("即将开启消息发送任务线程");
 
-		tran.setStatus(Transaction.SUCCESS);
-		tran.setCompleted(true);
-		tran.setDurationInMicros(0);
-		tran.addChild(first.getMessage());
+        while (m_active) {
+            processAtomicMessage();
+            processNormalMessage();
+        }
 
-		while (max >= 0) {
-			MessageTree tree = handler.poll();
 
-			if (tree == null) {
-				break;
-			}
-			tran.addChild(tree.getMessage());
-			max--;
-		}
-        first.setMessage(tran);
-		return first;
-	}
+        LogUtil.info("发送 AtomicMessage 类消息");
+        processAtomicMessage();
 
-	private void offer(MessageTree tree) {
-		if (m_configManager.isAtomicMessage(tree)) {
-			boolean result = m_atomicQueue.offer(tree);
+        while (true) {
+            MessageTree tree = m_queue.poll();
 
-			if (!result) {
-				logQueueFullInfo(tree);
-			}
-		} else {
-			boolean result = m_queue.offer(tree);
+            if (tree != null) {
+                ChannelFuture channel = m_channelManager.channel();
 
-			if (!result) {
-				logQueueFullInfo(tree);
-			}
-		}
-	}
+                if (channel != null) {
+                    sendInternal(channel, tree);
+                } else {
+                    offer(tree);
+                }
+            } else {
+                break;
+            }
+        }
+    }
 
-	private void processAtomicMessage() {
-		while (true) {
-			if (shouldMerge(m_atomicQueue)) {
-				MessageTree tree = mergeTree(m_atomicQueue);
-				boolean result = m_queue.offer(tree);
+    private void processAtomicMessage() {
 
-				if (!result) {
-					logQueueFullInfo(tree);
-				}
-			} else {
-				break;
-			}
-		}
-	}
 
-	private void processNormalMessage() {
-		while (true) {
-			ChannelFuture channel = m_channelManager.channel();
+        while (true) {
+            LogUtil.info("合并 AtomicMessage 类消息");
 
-			if (channel != null) {
-				try {
-					MessageTree tree = m_queue.poll();
+            if (shouldMerge(m_atomicQueue)) {
+                MessageTree tree = mergeTree(m_atomicQueue);
+                boolean result = m_queue.offer(tree);
+                if (!result) {
+                    logQueueFullInfo(tree);
+                }
+            } else {
+                break;
+            }
 
-					if (tree != null) {
-						sendInternal(channel, tree);
-						tree.setMessage(null);
-					} else {
-						try {
-							Thread.sleep(5);
-						} catch (Exception e) {
-							m_active = false;
-						}
-						break;
-					}
-				} catch (Throwable t) {
-					m_logger.error("Error when sending message over TCP socket!", t);
-				}
-			} else {
-				try {
-					Thread.sleep(5);
-				} catch (Exception e) {
-					m_active = false;
-				}
-			}
-		}
-	}
+        }
 
-	@Override
-	public void run() {
-		m_active = true;
+    }
 
-		while (m_active) {
-			processAtomicMessage();
-			processNormalMessage();
-		}
+    private void processNormalMessage() {
+        while (true) {
 
-		processAtomicMessage();
+            LogUtil.info("发送 NormalMessage 类消息");
 
-		while (true) {
-			MessageTree tree = m_queue.poll();
+            ChannelFuture channel = m_channelManager.channel();
 
-			if (tree != null) {
-				ChannelFuture channel = m_channelManager.channel();
+            if (channel != null) {
+                try {
+                    MessageTree tree = m_queue.poll();
 
-				if (channel != null) {
-					sendInternal(channel, tree);
-				} else {
-					offer(tree);
-				}
-			} else {
-				break;
-			}
-		}
-	}
+                    if (tree != null) {
+                        sendInternal(channel, tree);
+                        tree.setMessage(null);
+                    } else {
+                        try {
+                            Thread.sleep(5);
+                        } catch (Exception e) {
+                            m_active = false;
+                        }
+                        break;
+                    }
+                } catch (Throwable throwable) {
+                    LogUtil.info("TCP socket 发送数据抛出异常", U.format("Throwable", U.toString(throwable)));
+                }
+            } else {
+                try {
+                    //Thread.sleep(5);
+                    Thread.sleep(5 * 1000);
+                } catch (Exception e) {
+                    m_active = false;
+                }
+            }
+        }
+    }
 
-	@Override
-	public void send(MessageTree tree) {
-		if (!m_configManager.isBlock()) {
-			double sampleRatio = m_configManager.getSampleRatio();
+    public void sendInternal(ChannelFuture channel, MessageTree tree) {
 
-			if (tree.canDiscard() && sampleRatio < 1.0 && (!tree.isHitSample())) {
-				processTreeInClient(tree);
-			} else {
-				offer(tree);
-			}
-		}
-	}
+        if (tree.getMessageId() == null) {
+            tree.setMessageId(m_factory.getNextId());
+        }
 
-	private void processTreeInClient(MessageTree tree) {
-		LocalAggregator.aggregate(tree);
-	}
+        LogUtil.info("发送 MessageTree", U.format("MessageTree", U.toString(tree)));
 
-	public void sendInternal(ChannelFuture channel, MessageTree tree) {
-		if (tree.getMessageId() == null) {
-			tree.setMessageId(m_factory.getNextId());
-		}
+        ByteBuf buf = m_codec.encode(tree);
 
-		ByteBuf buf = m_codec.encode(tree);
+        int size = buf.readableBytes();
 
-		int size = buf.readableBytes();
+        channel.channel().writeAndFlush(buf);
 
-		channel.channel().writeAndFlush(buf);
+        if (m_statistics != null) {
+            m_statistics.onBytes(size);
+        }
+    }
 
-		if (m_statistics != null) {
-			m_statistics.onBytes(size);
-		}
-	}
+    private void offer(MessageTree tree) {
+        if (m_configManager.isAtomicMessage(tree)) {
+            boolean result = m_atomicQueue.offer(tree);
+            LogUtil.info("向 m_atomicQueue 中插入 MessageTree", U.format("MessageTree", U.toString(tree), "result", result));
+            if (!result) {
+                logQueueFullInfo(tree);
+            }
+        } else {
+            boolean result = m_queue.offer(tree);
+            LogUtil.info("向 m_atomicQueue 中插入 MessageTree", U.format("MessageTree", U.toString(tree), "result", result));
+            if (!result) {
+                logQueueFullInfo(tree);
+            }
+        }
+    }
 
-	private boolean shouldMerge(MessageQueue queue) {
-		MessageTree tree = queue.peek();
+    private boolean shouldMerge(MessageQueue queue) {
+        MessageTree tree = queue.peek();
 
-		if (tree != null) {
-			long firstTime = tree.getMessage().getTimestamp();
+        if (tree != null) {
+            long firstTime = tree.getMessage().getTimestamp();
 
             return System.currentTimeMillis() - firstTime > MAX_DURATION || queue.size() >= MAX_CHILD_NUMBER;
-		}
-		return false;
-	}
+        }
+        return false;
+    }
 
-	@Override
-	public void shutdown() {
-		m_active = false;
-		m_channelManager.shutdown();
-	}
+    private MessageTree mergeTree(MessageQueue handler) {
+
+        LogUtil.info("合并 MessageTree");
+        int max = MAX_CHILD_NUMBER;
+        DefaultTransaction transaction = new DefaultTransaction("System", "_CatMergeTree", null);
+        MessageTree first = handler.poll();
+
+        transaction.setStatus(Transaction.SUCCESS);
+        transaction.setCompleted(true);
+        transaction.setDurationInMicros(0);
+        transaction.addChild(first.getMessage());
+
+        while (max >= 0) {
+            MessageTree tree = handler.poll();
+
+            if (tree == null) {
+                break;
+            }
+            transaction.addChild(tree.getMessage());
+            max--;
+        }
+        first.setMessage(transaction);
+        return first;
+    }
+
+    private void logQueueFullInfo(MessageTree tree) {
+        if (m_statistics != null) {
+            m_statistics.onOverflowed(tree);
+        }
+
+        int count = m_errors.incrementAndGet();
+
+        if (count % 1000 == 0 || count == 1) {
+            LogUtil.info("tcp socket sender 队列已满,当前消息数量", U.format("count", count));
+        }
+
+        tree = null;
+    }
 }

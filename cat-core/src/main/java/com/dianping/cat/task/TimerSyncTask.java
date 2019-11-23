@@ -21,6 +21,8 @@ package com.dianping.cat.task;
 import com.dianping.cat.Cat;
 import com.dianping.cat.helper.TimeHelper;
 import com.dianping.cat.message.Transaction;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 import org.unidal.helper.Threads;
 import org.unidal.helper.Threads.Task;
 
@@ -30,89 +32,102 @@ import java.util.concurrent.ExecutorService;
 
 public class TimerSyncTask implements Task {
 
-	private static final long DURATION = TimeHelper.ONE_MINUTE;
+    private static final long DURATION = TimeHelper.ONE_MINUTE;
 
-	private static TimerSyncTask m_instance = new TimerSyncTask();
+    private static TimerSyncTask m_instance = new TimerSyncTask();
 
-	private static ExecutorService s_threadPool = Threads.forPool().getFixedThreadPool("Cat-ConfigSyncTask", 3);
+    private static ExecutorService s_threadPool = Threads.forPool().getFixedThreadPool("Cat-ConfigSyncTask", 3);
 
-	private static boolean m_active = false;
+    private static boolean m_active = false;
 
-	private List<SyncHandler> m_handlers = new ArrayList<SyncHandler>();
+    private List<SyncHandler> m_handlers = new ArrayList<SyncHandler>();
 
-	public static TimerSyncTask getInstance() {
-		if (!m_active) {
-			synchronized (TimerSyncTask.class) {
-				if (!m_active) {
-					Threads.forGroup("cat").start(m_instance);
+    public static TimerSyncTask getInstance() {
 
-					m_active = true;
-				}
-			}
-		}
-		return m_instance;
-	}
+        LogUtil.info("加载 TimerSyncTask 实例");
 
-	@Override
-	public String getName() {
-		return "timer-sync-task";
-	}
+        if (!m_active) {
+            synchronized (TimerSyncTask.class) {
+                if (!m_active) {
+                    Threads.forGroup("cat").start(m_instance);
 
-	public void register(SyncHandler handler) {
-		synchronized (this) {
-			m_handlers.add(handler);
-		}
-	}
+                    m_active = true;
+                }
+            }
+        }
+        return m_instance;
+    }
 
-	@Override
-	public void run() {
-		boolean active = TimeHelper.sleepToNextMinute();
+    @Override
+    public String getName() {
+        return "timer-sync-task";
+    }
 
-		while (active) {
-			long current = System.currentTimeMillis();
+    @Override
+    public void shutdown() {
+    }
 
-			for (final SyncHandler handler : m_handlers) {
-				s_threadPool.submit(new Runnable() {
+    public void register(SyncHandler handler) {
+        synchronized (this) {
+            LogUtil.info("添加SyncHandler", U.format("SyncHandler", U.toString(handler)));
+            m_handlers.add(handler);
+        }
+    }
 
-					@Override
-					public void run() {
-						final Transaction t = Cat.newTransaction("TimerSync", handler.getName());
+    @Override
+    public void run() {
 
-						try {
-							handler.handle();
-							t.setStatus(Transaction.SUCCESS);
-						} catch (Exception e) {
-							t.setStatus(e);
-							Cat.logError(e);
-						} finally {
-							t.complete();
-						}
-					}
-				});
-			}
+        boolean active = TimeHelper.sleepToNextMinute();
 
-			long duration = System.currentTimeMillis() - current;
+        LogUtil.info("1min后启动数据同步线程");
 
-			try {
-				if (duration < DURATION) {
-					Thread.sleep(DURATION - duration);
-				}
-			} catch (InterruptedException e) {
-				active = false;
-			}
-		}
-	}
 
-	@Override
-	public void shutdown() {
-	}
+        while (active) {
 
-	public interface SyncHandler {
+            LogUtil.info("开始数据同步");
 
-		public String getName();
+            long current = System.currentTimeMillis();
 
-		public void handle() throws Exception;
+            for (final SyncHandler handler : m_handlers) {
+                s_threadPool.submit(new Runnable() {
 
-	}
+                    @Override
+                    public void run() {
+                        final Transaction t = Cat.newTransaction("TimerSync", handler.getName());
+
+                        try {
+                            LogUtil.info("运行数据同步任务", U.format("handler", handler.getName()));
+                            handler.handle();
+                            t.setStatus(Transaction.SUCCESS);
+                        } catch (Exception e) {
+                            t.setStatus(e);
+                            Cat.logError(e);
+                        } finally {
+                            t.complete();
+                        }
+                    }
+                });
+            }
+
+            long duration = System.currentTimeMillis() - current;
+
+            try {
+                if (duration < DURATION) {
+                    Thread.sleep(DURATION - duration);
+                }
+            } catch (InterruptedException e) {
+                LogUtil.info("数据同步线程休眠过程抛出异常,设置active=false");
+                active = false;
+            }
+        }
+    }
+
+    public interface SyncHandler {
+
+        String getName();
+
+        void handle() throws Exception;
+
+    }
 
 }

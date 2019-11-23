@@ -19,6 +19,7 @@
 package com.dianping.cat;
 
 import com.dianping.cat.report.server.ServersUpdaterManager;
+import com.doublespring.log.LogUtil;
 import org.unidal.initialization.AbstractModule;
 import org.unidal.initialization.Module;
 import org.unidal.initialization.ModuleContext;
@@ -31,6 +32,7 @@ public class CatCoreModule extends AbstractModule {
     @Override
     protected void execute(final ModuleContext ctx) throws Exception {
         // bring up ServersUpdaterManager
+        LogUtil.info("实例化 ServersUpdaterManager");
         ctx.lookup(ServersUpdaterManager.class);
     }
 

@@ -27,6 +27,7 @@ import com.dianping.cat.message.io.DefaultTransportManager;
 import com.dianping.cat.message.io.TcpSocketSender;
 import com.dianping.cat.message.spi.internal.DefaultMessageStatistics;
 import com.dianping.cat.status.StatusUpdateTask;
+import com.doublespring.log.LogUtil;
 import org.unidal.lookup.configuration.AbstractResourceConfigurator;
 import org.unidal.lookup.configuration.Component;
 
@@ -34,28 +35,41 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ComponentsConfigurator extends AbstractResourceConfigurator {
-	public static void main(String[] args) {
-		generatePlexusComponentsXmlFile(new ComponentsConfigurator());
-	}
+    public static void main(String[] args) {
+        generatePlexusComponentsXmlFile(new ComponentsConfigurator());
+    }
 
-	@Override
-	public List<Component> defineComponents() {
-		List<Component> all = new ArrayList<Component>();
+    @Override
+    public List<Component> defineComponents() {
 
-		all.add(A(DefaultClientConfigManager.class));
-		all.add(C(MessageIdFactory.class));
+        List<Component> all = new ArrayList<Component>();
 
-		all.add(A(DefaultMessageManager.class));
-		all.add(A(DefaultMessageProducer.class));
+        LogUtil.info("初始化 Components");
 
-		all.add(A(TcpSocketSender.class));
-		all.add(A(DefaultTransportManager.class));
+        LogUtil.info("初始化 Component >> DefaultClientConfigManager");
+        all.add(A(DefaultClientConfigManager.class));
 
-		all.add(A(DefaultMessageStatistics.class));
-		all.add(A(StatusUpdateTask.class));
+        LogUtil.info("初始化 Component >> MessageIdFactory");
+        all.add(C(MessageIdFactory.class));
 
-		all.add(A(CatClientModule.class));
+        LogUtil.info("初始化 Component >> DefaultMessageManager");
+        all.add(A(DefaultMessageManager.class));
+        LogUtil.info("初始化 Component >> DefaultMessageProducer");
+        all.add(A(DefaultMessageProducer.class));
 
-		return all;
-	}
+        LogUtil.info("初始化 Component >> TcpSocketSender");
+        all.add(A(TcpSocketSender.class));
+        LogUtil.info("初始化 Component >> DefaultTransportManager");
+        all.add(A(DefaultTransportManager.class));
+
+        LogUtil.info("初始化 Component >> DefaultMessageStatistics");
+        all.add(A(DefaultMessageStatistics.class));
+        LogUtil.info("初始化 Component >> StatusUpdateTask");
+        all.add(A(StatusUpdateTask.class));
+
+        LogUtil.info("初始化 Component >> CatClientModule");
+        all.add(A(CatClientModule.class));
+
+        return all;
+    }
 }

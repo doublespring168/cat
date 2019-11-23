@@ -50,8 +50,11 @@ public class CatClientModule extends AbstractModule {
         MilliSecondTimer.initialize();
 
         // tracking thread start/stop
-        LogUtil.info("添加线程监控 CatThreadListener");
-        Threads.addListener(new CatThreadListener(ctx));
+        LogUtil.info("实例化线程监控 CatThreadListener");
+        CatThreadListener catThreadListener = new CatThreadListener(ctx);
+
+        LogUtil.info("注册线程监控 CatThreadListener");
+        Threads.addListener(catThreadListener);
 
         ClientConfigManager clientConfigManager = ctx.lookup(ClientConfigManager.class);
 

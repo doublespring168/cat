@@ -23,6 +23,8 @@ import com.dianping.cat.CatConstants;
 import com.dianping.cat.message.Event;
 import com.dianping.cat.message.Transaction;
 import com.dianping.cat.message.spi.MessageTree;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,158 +32,192 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class EventAggregator {
 
-	private static EventAggregator s_instance = new EventAggregator();
+    private static EventAggregator s_instance = new EventAggregator();
 
-	private volatile ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>> m_events = new ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>>();
+    private volatile ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>> m_events = new ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>>();
 
-	public static EventAggregator getInstance() {
-		return s_instance;
-	}
+    public static EventAggregator getInstance() {
+        LogUtil.info("加载 EventAggregator 实例");
+        return s_instance;
+    }
 
-	private EventData createEventData(String type, String name) {
-		return new EventData(type, name);
-	}
+    public void logEvent(Event e) {
+        LogUtil.info("记录 Event 类消息");
+        EventData eventData = makeSureEventExist(e.getType(), e.getName()).add(e);
+        LogUtil.info("eventData", U.format("eventData", U.toString(eventData)));
+    }
 
-	public ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>> getAndResetEvents() {
-		ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>> cloned = m_events;
+    private EventData makeSureEventExist(String type, String name) {
 
-		m_events = new ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>>();
+        LogUtil.info("检测 EventData 是否存在", U.format("type", type, "name", name));
 
-		for (Map.Entry<String, ConcurrentHashMap<String, EventData>> entry : cloned.entrySet()) {
-			String type = entry.getKey();
+        ConcurrentHashMap<String, EventData> item = m_events.get(type);
 
-			m_events.putIfAbsent(type, new ConcurrentHashMap<String, EventData>());
-		}
+        if (null == item) {
 
-		return cloned;
-	}
+            LogUtil.info("ConcurrentHashMap<String, EventData> 不存在,即将创建", U.format("type", type, "name", name));
 
-	public String getDomain(MessageTree tree) {
-		return Cat.getManager().getDomain();
-	}
+            item = new ConcurrentHashMap<String, EventData>();
 
-	public void logBatchEvent(String type, String name, int total, int fail) {
-		makeSureEventExist(type, name).add(total, fail);
-	}
+            ConcurrentHashMap<String, EventData> oldValue = m_events.putIfAbsent(type, item);
 
-	public void logEvent(Event e) {
-		makeSureEventExist(e.getType(), e.getName()).add(e);
-	}
+            if (oldValue != null) {
+                item = oldValue;
+            }
+        }
 
-	private EventData makeSureEventExist(String type, String name) {
-		ConcurrentHashMap<String, EventData> item = m_events.get(type);
+        EventData data = item.get(name);
 
-		if (null == item) {
-			item = new ConcurrentHashMap<String, EventData>();
+        if (null == data) {
 
-			ConcurrentHashMap<String, EventData> oldValue = m_events.putIfAbsent(type, item);
+            LogUtil.info("EventData 不存在,即将创建", U.format("type", type, "name", name));
 
-			if (oldValue != null) {
-				item = oldValue;
-			}
-		}
+            data = createEventData(type, name);
 
-		EventData data = item.get(name);
+            EventData oldValue = item.putIfAbsent(name, data);
 
-		if (null == data) {
-			data = createEventData(type, name);
+            if (oldValue == null) {
+                return data;
+            } else {
+                return oldValue;
+            }
+        }
 
-			EventData oldValue = item.putIfAbsent(name, data);
+        return data;
+    }
 
-			if (oldValue == null) {
-				return data;
-			} else {
-				return oldValue;
-			}
-		}
+    private EventData createEventData(String type, String name) {
+        EventData eventData = new EventData(type, name);
+        LogUtil.info("创建 EventData", U.format("eventData", U.toString(eventData), "type", type, "name", name));
+        return eventData;
+    }
 
-		return data;
-	}
+    public void sendEventData() {
 
-	public void sendEventData() {
-		ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>> events = getAndResetEvents();
-		boolean hasData = false;
+        LogUtil.info("发送 Event 数据");
+        ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>> events = getAndResetEvents();
+        boolean hasData = false;
 
-		for (Map<String, EventData> entry : events.values()) {
-			for (EventData data : entry.values()) {
-				if (data.getCount() > 0) {
-					hasData = true;
-					break;
-				}
-			}
-		}
+        for (Map<String, EventData> entry : events.values()) {
+            for (EventData data : entry.values()) {
+                if (data.getCount() > 0) {
+                    hasData = true;
+                    break;
+                }
+            }
+        }
 
-		if (hasData) {
-			Transaction t = Cat.newTransaction(CatConstants.CAT_SYSTEM, this.getClass().getSimpleName());
-			MessageTree tree = Cat.getManager().getThreadLocalMessageTree();
+        if (hasData) {
+            Transaction t = Cat.newTransaction(CatConstants.CAT_SYSTEM, this.getClass().getSimpleName());
+            MessageTree tree = Cat.getManager().getThreadLocalMessageTree();
 
-			tree.setDomain(getDomain(tree));
-			tree.setDiscardPrivate(false);
+            tree.setDomain(getDomain(tree));
+            tree.setDiscardPrivate(false);
 
-			for (Map<String, EventData> entry : events.values()) {
-				for (EventData data : entry.values()) {
-					if (data.getCount() > 0) {
-						Event tmp = Cat.newEvent(data.getType(), data.getName());
-						StringBuilder sb = new StringBuilder(32);
+            for (Map<String, EventData> entry : events.values()) {
+                for (EventData data : entry.values()) {
+                    if (data.getCount() > 0) {
+                        Event tmp = Cat.newEvent(data.getType(), data.getName());
+                        StringBuilder sb = new StringBuilder(32);
 
-						sb.append(CatConstants.BATCH_FLAG).append(data.getCount()).append(CatConstants.SPLIT).append(data.getError());
-						tmp.addData(sb.toString());
-						tmp.setSuccessStatus();
-						tmp.complete();
-					}
-				}
-			}
+                        sb.append(CatConstants.BATCH_FLAG).append(data.getCount()).append(CatConstants.SPLIT).append(data.getError());
+                        tmp.addData(sb.toString());
+                        tmp.setSuccessStatus();
+                        tmp.complete();
+                    }
+                }
+            }
 
-			t.setSuccessStatus();
-			t.complete();
-		}
-	}
+            t.setSuccessStatus();
+            t.complete();
+        }
+    }
 
-	public class EventData {
+    public ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>> getAndResetEvents() {
 
-		private String m_type;
+        LogUtil.info("即将clone 缓存的 EventData ");
 
-		private String m_name;
+        ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>> cloned = m_events;
 
-		private AtomicInteger m_count = new AtomicInteger();
+        m_events = new ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>>();
 
-		private AtomicInteger m_error = new AtomicInteger();
+        for (Map.Entry<String, ConcurrentHashMap<String, EventData>> entry : cloned.entrySet()) {
+            String type = entry.getKey();
 
-		public EventData(String type, String name) {
-			m_type = type;
-			m_name = name;
-		}
+            m_events.putIfAbsent(type, new ConcurrentHashMap<String, EventData>());
+        }
 
-		public EventData add(Event e) {
-			m_count.incrementAndGet();
+        LogUtil.info("cloned", U.format("EventDatas", U.toString(cloned)));
+        return cloned;
+    }
 
-			if (!e.isSuccess()) {
-				m_error.incrementAndGet();
-			}
-			return this;
-		}
+    public String getDomain(MessageTree tree) {
+        String domain = Cat.getManager().getDomain();
+        LogUtil.info("获取 domain 返参", U.format("domain", domain));
+        return domain;
+    }
 
-		public EventData add(int count, int fail) {
-			m_count.addAndGet(count);
-			m_error.addAndGet(fail);
-			return this;
-		}
+    public class EventData {
 
-		public int getCount() {
-			return m_count.get();
-		}
+        private String m_type;
 
-		public int getError() {
-			return m_error.get();
-		}
+        private String m_name;
 
-		public String getName() {
-			return m_name;
-		}
+        private AtomicInteger m_count = new AtomicInteger();
 
-		public String getType() {
-			return m_type;
-		}
-	}
+        private AtomicInteger m_error = new AtomicInteger();
+
+        public EventData(String type, String name) {
+            m_type = type;
+            m_name = name;
+        }
+
+        public EventData add(Event e) {
+            m_count.incrementAndGet();
+
+            if (!e.isSuccess()) {
+                m_error.incrementAndGet();
+            }
+            return this;
+        }
+
+        public String getM_type() {
+            return m_type;
+        }
+
+        public String getM_name() {
+            return m_name;
+        }
+
+        public AtomicInteger getM_count() {
+            return m_count;
+        }
+
+        public AtomicInteger getM_error() {
+            return m_error;
+        }
+
+        public EventData add(int count, int fail) {
+            m_count.addAndGet(count);
+            m_error.addAndGet(fail);
+            return this;
+        }
+
+        public int getCount() {
+            return m_count.get();
+        }
+
+        public int getError() {
+            return m_error.get();
+        }
+
+        public String getName() {
+            return m_name;
+        }
+
+        public String getType() {
+            return m_type;
+        }
+    }
 
 }

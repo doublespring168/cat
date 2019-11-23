@@ -18,81 +18,92 @@
  */
 package com.dianping.cat.analyzer;
 
-import java.util.List;
-
 import com.dianping.cat.Cat;
 import com.dianping.cat.message.Event;
 import com.dianping.cat.message.Message;
 import com.dianping.cat.message.Transaction;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.util.Threads.Task;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
+
+import java.util.List;
 
 public class LocalAggregator {
 
-	public static void aggregate(MessageTree tree) {
-		analyzerProcessTree(tree);
-	}
+    public LocalAggregator() {
+        LogUtil.info("实例化 LocalAggregator");
+    }
 
-	private static void analyzerProcessTree(MessageTree tree) {
-		Message message = tree.getMessage();
+    public static void aggregate(MessageTree tree) {
 
-		if (message instanceof Transaction) {
-			analyzerProcessTransaction((Transaction) message);
-		} else if (message instanceof Event) {
-			EventAggregator.getInstance().logEvent((Event) message);
-		}
-	}
 
-	private static void analyzerProcessTransaction(Transaction transaction) {
-		TransactionAggregator.getInstance().logTransaction(transaction);
-		List<Message> child = transaction.getChildren();
+        analyzerProcessTree(tree);
+    }
 
-		for (Message message : child) {
-			if (message instanceof Transaction) {
-				analyzerProcessTransaction((Transaction) message);
-			} else if (message instanceof Event) {
-				EventAggregator.getInstance().logEvent((Event) message);
-			}
-		}
-	}
+    private static void analyzerProcessTree(MessageTree tree) {
+        Message message = tree.getMessage();
 
-	public static class DataUploader implements Task {
+        if (message instanceof Transaction) {
+            analyzerProcessTransaction((Transaction) message);
+        } else if (message instanceof Event) {
+            EventAggregator.getInstance().logEvent((Event) message);
+        }
+    }
 
-		private boolean m_active = true;
+    private static void analyzerProcessTransaction(Transaction transaction) {
 
-		@Override
-		public String getName() {
-			return "local-data-aggregator";
-		}
+        LogUtil.info("正在聚合 Transaction 消息", U.format("Transaction", U.toString(transaction)));
 
-		@Override
-		public void run() {
-			while (m_active) {
-				long start = System.currentTimeMillis();
+        TransactionAggregator.getInstance().logTransaction(transaction);
+        List<Message> child = transaction.getChildren();
 
-				try {
-					TransactionAggregator.getInstance().sendTransactionData();
-					EventAggregator.getInstance().sendEventData();
-				} catch (Exception ex) {
-					Cat.logError(ex);
-				}
+        for (Message message : child) {
+            if (message instanceof Transaction) {
+                analyzerProcessTransaction((Transaction) message);
+            } else if (message instanceof Event) {
+                EventAggregator.getInstance().logEvent((Event) message);
+            }
+        }
+    }
 
-				long duration = System.currentTimeMillis() - start;
+    public static class DataUploader implements Task {
 
-				if (duration >= 0 && duration < 1000) {
-					try {
-						Thread.sleep(1000 - duration);
-					} catch (InterruptedException e) {
-						break;
-					}
-				}
-			}
-		}
+        private boolean m_active = true;
 
-		@Override
-		public void shutdown() {
-			m_active = false;
-		}
-	}
+        @Override
+        public String getName() {
+            return "local-data-aggregator";
+        }
+
+        @Override
+        public void shutdown() {
+            m_active = false;
+        }
+
+        @Override
+        public void run() {
+            while (m_active) {
+                long start = System.currentTimeMillis();
+
+                try {
+                    TransactionAggregator.getInstance().sendTransactionData();
+                    EventAggregator.getInstance().sendEventData();
+                } catch (Exception ex) {
+                    Cat.logError(ex);
+                }
+
+                long duration = System.currentTimeMillis() - start;
+
+                if (duration >= 0 && duration < 1000) {
+                    try {
+                        Thread.sleep(1000 - duration);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
 }
