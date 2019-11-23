@@ -29,13 +29,13 @@ import org.unidal.test.jetty.JettyServer;
 
 @RunWith(JUnit4.class)
 public class TestServer extends JettyServer {
-	public static void main(String[] args) throws Exception {
-		TestServer server = new TestServer();
-		System.setProperty("devMode", "true");
-		server.startServer();
-		server.startWebApp();
-		server.stopServer();
-	}
+	//public static void main(String[] args) throws Exception {
+	//	TestServer server = new TestServer();
+	//	System.setProperty("devMode", "true");
+	//	server.startServer();
+	//	server.startWebApp();
+	//	server.stopServer();
+	//}
 
 	@Before
 	public void before() throws Exception {
@@ -59,6 +59,8 @@ public class TestServer extends JettyServer {
 
 	@Test
 	public void startWebApp() throws Exception {
+		System.setProperty("devMode", "true");
+		System.setProperty("warRoot", "/Users/spring/workspace/cat/cat-home/target/classes");
 		super.startServer();
 		display("/cat/r");
 		waitForAnyKey();
