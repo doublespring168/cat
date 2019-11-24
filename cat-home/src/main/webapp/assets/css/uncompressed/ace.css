@@ -1104,8 +1104,7 @@ pre.prettyprint {
   color: #ffffff;
   font-size: 24px;
   text-shadow: none;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding: 5px 12px;
   height: auto;
 }
 .navbar .navbar-brand:hover,

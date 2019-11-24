@@ -106,16 +106,18 @@
 
 [Apache 2.0 License.](/LICENSE)
 
-### CAT 接入公司
 
-![Alt text](cat-home/src/main/webapp/images/logo/companys.png)
 
-更多接入公司，欢迎在 <https://github.com/dianping/cat/issues/753> 登记
+# 本地开发配置
 
-### 联系我们
+1)新建 /data/appdatas/cat/ 目录,并授权
 
-我们需要知道你对Cat的一些看法以及建议：
+    chmod -R 777 /data
 
-- Mail: cat@dianping.com，
-- [**Issues**](https://github.com/dianping/cat/issues)
+2)使用 CatApplication.sql 初始化数据库
 
+3)修改 z-config 目录中的init.xml、client.xml、datasources.xml和server.xml中的IP地址为本机IP地址,注意不能使用127.0.0.1,然后将client.xml、datasources.xml和server.xml复制到/data/appdatas/cat/目录中
+
+4)启动Tomcat,并访问 http://127.0.0.1:8080/cat/s/config?op=routerConfigUpdate
+
+  输入init.xml文件中的内容,并保存,然后重启Tomcat,浏览器访问http://127.0.0.1:8080/cat/r/top?op=view&domain=cat,即可看到服务正常运行
