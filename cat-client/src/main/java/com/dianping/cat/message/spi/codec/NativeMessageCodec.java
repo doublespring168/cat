@@ -23,6 +23,8 @@ import com.dianping.cat.message.internal.*;
 import com.dianping.cat.message.spi.MessageCodec;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.message.spi.internal.DefaultMessageTree;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 
@@ -31,18 +33,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Stack;
 
-
-/**
- * 功能说明：该类加日志会造成统计功能紊乱
- * Author：Darcy
- * Date：2019-11-24 10:42
- */
 public class NativeMessageCodec implements MessageCodec {
 
 	public static final String ID = "NT1"; // native message tree version 1
 
 	@Override
 	public MessageTree decode(ByteBuf buf) {
+
+        LogUtil.info("解码 ByteBuf");
+
 		buf.readInt(); // read the length of the message tree
 
 		DefaultMessageTree tree = new DefaultMessageTree();
@@ -53,44 +52,47 @@ public class NativeMessageCodec implements MessageCodec {
 		tree.setMessage(msg);
 		tree.setBuffer(buf);
 
+        LogUtil.info("解码 ByteBuf 返参", U.format("MessageTree", U.toString(tree)));
+
 		return tree;
 	}
 
 	private Message decodeMessage(Context ctx, ByteBuf buf) {
+
 		Message msg = null;
 
 		while (buf.readableBytes() > 0) {
 			char ch = ctx.readId(buf);
 
 			switch (ch) {
-			case 't':
-				Codec.TRANSACTION_START.decode(ctx, buf);
-				break;
-			case 'T':
-				msg = Codec.TRANSACTION_END.decode(ctx, buf);
-				break;
-			case 'E':
-				Message e = Codec.EVENT.decode(ctx, buf);
+                case 't':
+                    Codec.TRANSACTION_START.decode(ctx, buf);
+                    break;
+                case 'T':
+                    msg = Codec.TRANSACTION_END.decode(ctx, buf);
+                    break;
+                case 'E':
+                    Message e = Codec.EVENT.decode(ctx, buf);
 
-				ctx.addChild(e);
-				break;
-			case 'M':
-				Message m = Codec.METRIC.decode(ctx, buf);
+                    ctx.addChild(e);
+                    break;
+                case 'M':
+                    Message m = Codec.METRIC.decode(ctx, buf);
 
-				ctx.addChild(m);
-				break;
-			case 'H':
-				Message h = Codec.HEARTBEAT.decode(ctx, buf);
+                    ctx.addChild(m);
+                    break;
+                case 'H':
+                    Message h = Codec.HEARTBEAT.decode(ctx, buf);
 
-				ctx.addChild(h);
-				break;
-			case 'L':
-				Message l = Codec.TRACE.decode(ctx, buf);
+                    ctx.addChild(h);
+                    break;
+                case 'L':
+                    Message l = Codec.TRACE.decode(ctx, buf);
 
-				ctx.addChild(l);
-				break;
-			default:
-				throw new RuntimeException(String.format("Unsupported message type(%s).", ch));
+                    ctx.addChild(l);
+                    break;
+                default:
+                    throw new RuntimeException(String.format("消息类型未知,无法解码 message type(%s).", ch));
 			}
 		}
 
@@ -98,12 +100,17 @@ public class NativeMessageCodec implements MessageCodec {
 			msg = ctx.getMessageTree().getMessage();
 		}
 
+        LogUtil.info("解码后 Message", U.format("Message", U.toString(msg)));
+
 		return msg;
 	}
 
 	@Override
 	public ByteBuf encode(MessageTree tree) {
+
 		ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer(4 * 1024);
+
+        LogUtil.info("编码 MessageTree", U.format("MessageTree", U.toString(tree)));
 
 		try {
 			Context ctx = new Context(tree);
@@ -129,7 +136,14 @@ public class NativeMessageCodec implements MessageCodec {
 		}
 	}
 
+    @Override
+    public void reset() {
+    }
+
 	private void encodeMessage(Context ctx, ByteBuf buf, Message msg) {
+
+        LogUtil.info("编码 Message", U.format("Message", U.toString(msg)));
+
 		if (msg instanceof Transaction) {
 			Transaction transaction = (Transaction) msg;
 			List<Message> children = transaction.getChildren();
@@ -156,10 +170,6 @@ public class NativeMessageCodec implements MessageCodec {
 		}
 	}
 
-	@Override
-	public void reset() {
-	}
-
 	enum Codec {
 		HEADER {
 			@Override
@@ -178,8 +188,10 @@ public class NativeMessageCodec implements MessageCodec {
 					tree.setParentMessageId(ctx.readString(buf));
 					tree.setRootMessageId(ctx.readString(buf));
 					tree.setSessionToken(ctx.readString(buf));
+
+                    LogUtil.info("解码 HEADER", U.format("MessageTree", U.toString(tree)));
 				} else {
-					throw new RuntimeException(String.format("Unrecognized version(%s) for binary message codec!", version));
+                    throw new RuntimeException(String.format("未识别的Message version(%s) for binary message codec!", version));
 				}
 
 				return null;
@@ -200,6 +212,9 @@ public class NativeMessageCodec implements MessageCodec {
 				ctx.writeString(buf, tree.getParentMessageId());
 				ctx.writeString(buf, tree.getRootMessageId());
 				ctx.writeString(buf, tree.getSessionToken());
+
+                LogUtil.info("编码 HEADER", U.format("MessageTree", U.toString(tree)));
+
 			}
 		},
 
@@ -214,17 +229,19 @@ public class NativeMessageCodec implements MessageCodec {
 					name = "UploadMetric";
 				}
 
-				DefaultTransaction t = new DefaultTransaction(type, name);
+                DefaultTransaction defaultTransaction = new DefaultTransaction(type, name);
 
-				t.setTimestamp(timestamp);
-				ctx.pushTransaction(t);
+                defaultTransaction.setTimestamp(timestamp);
+                ctx.pushTransaction(defaultTransaction);
 
 				MessageTree tree = ctx.getMessageTree();
 				if (tree instanceof DefaultMessageTree) {
-					tree.getTransactions().add(t);
+                    tree.getTransactions().add(defaultTransaction);
 				}
 
-				return t;
+                LogUtil.info("解码 TRANSACTION_START", U.format("defaultTransaction", U.toString(defaultTransaction)));
+
+                return defaultTransaction;
 			}
 
 			@Override
@@ -233,6 +250,9 @@ public class NativeMessageCodec implements MessageCodec {
 				ctx.writeTimestamp(buf, msg.getTimestamp());
 				ctx.writeString(buf, msg.getType());
 				ctx.writeString(buf, msg.getName());
+
+                LogUtil.info("编码 TRANSACTION_START", U.format("Message", U.toString(msg)));
+
 			}
 		},
 
@@ -242,22 +262,30 @@ public class NativeMessageCodec implements MessageCodec {
 				String status = ctx.readString(buf);
 				String data = ctx.readString(buf);
 				long durationInMicros = ctx.readDuration(buf);
-				DefaultTransaction t = ctx.popTransaction();
+                DefaultTransaction defaultTransaction = ctx.popTransaction();
 
-				t.setStatus(status);
-				t.addData(data);
-				t.setDurationInMicros(durationInMicros);
-				return t;
+                defaultTransaction.setStatus(status);
+                defaultTransaction.addData(data);
+                defaultTransaction.setDurationInMicros(durationInMicros);
+
+                LogUtil.info("解码 TRANSACTION_END", U.format("defaultTransaction", U.toString(defaultTransaction)));
+
+
+                return defaultTransaction;
 			}
 
 			@Override
 			protected void encode(Context ctx, ByteBuf buf, Message msg) {
-				Transaction t = (Transaction) msg;
+                Transaction transaction = (Transaction) msg;
 
 				ctx.writeId(buf, 'T');
 				ctx.writeString(buf, msg.getStatus());
 				ctx.writeString(buf, msg.getData().toString());
-				ctx.writeDuration(buf, t.getDurationInMicros());
+                ctx.writeDuration(buf, transaction.getDurationInMicros());
+
+                LogUtil.info("编码 TRANSACTION_END", U.format("Transaction", U.toString(transaction)));
+
+
 			}
 		},
 
@@ -269,18 +297,19 @@ public class NativeMessageCodec implements MessageCodec {
 				String name = ctx.readString(buf);
 				String status = ctx.readString(buf);
 				String data = ctx.readString(buf);
-				DefaultEvent e = new DefaultEvent(type, name);
+                DefaultEvent defaultEvent = new DefaultEvent(type, name);
 
-				e.setTimestamp(timestamp);
-				e.setStatus(status);
-				e.addData(data);
+                defaultEvent.setTimestamp(timestamp);
+                defaultEvent.setStatus(status);
+                defaultEvent.addData(data);
 
 				MessageTree tree = ctx.getMessageTree();
 				if (tree instanceof DefaultMessageTree) {
-					tree.getEvents().add(e);
+                    tree.getEvents().add(defaultEvent);
 				}
+                LogUtil.info("解码 EVENT", U.format("defaultEvent", U.toString(defaultEvent)));
 
-				return e;
+                return defaultEvent;
 			}
 
 			@Override
@@ -291,6 +320,10 @@ public class NativeMessageCodec implements MessageCodec {
 				ctx.writeString(buf, msg.getName());
 				ctx.writeString(buf, msg.getStatus());
 				ctx.writeString(buf, msg.getData().toString());
+
+                LogUtil.info("编码 EVENT", U.format("Message", U.toString(msg)));
+
+
 			}
 		},
 
@@ -302,18 +335,21 @@ public class NativeMessageCodec implements MessageCodec {
 				String name = ctx.readString(buf);
 				String status = ctx.readString(buf);
 				String data = ctx.readString(buf);
-				DefaultMetric m = new DefaultMetric(type, name);
+                DefaultMetric defaultMetric = new DefaultMetric(type, name);
 
-				m.setTimestamp(timestamp);
-				m.setStatus(status);
-				m.addData(data);
+                defaultMetric.setTimestamp(timestamp);
+                defaultMetric.setStatus(status);
+                defaultMetric.addData(data);
 
 				MessageTree tree = ctx.getMessageTree();
 				if (tree instanceof DefaultMessageTree) {
-					tree.getMetrics().add(m);
+                    tree.getMetrics().add(defaultMetric);
 				}
 
-				return m;
+                LogUtil.info("解码 METRIC", U.format("defaultMetric", U.toString(defaultMetric)));
+
+
+                return defaultMetric;
 			}
 
 			@Override
@@ -324,6 +360,10 @@ public class NativeMessageCodec implements MessageCodec {
 				ctx.writeString(buf, msg.getName());
 				ctx.writeString(buf, msg.getStatus());
 				ctx.writeString(buf, msg.getData().toString());
+
+                LogUtil.info("编码 METRIC", U.format("Message", U.toString(msg)));
+
+
 			}
 		},
 
@@ -335,18 +375,21 @@ public class NativeMessageCodec implements MessageCodec {
 				String name = ctx.readString(buf);
 				String status = ctx.readString(buf);
 				String data = ctx.readString(buf);
-				DefaultHeartbeat h = new DefaultHeartbeat(type, name);
+                DefaultHeartbeat defaultHeartbeat = new DefaultHeartbeat(type, name);
 
-				h.setTimestamp(timestamp);
-				h.setStatus(status);
-				h.addData(data);
+                defaultHeartbeat.setTimestamp(timestamp);
+                defaultHeartbeat.setStatus(status);
+                defaultHeartbeat.addData(data);
 
 				MessageTree tree = ctx.getMessageTree();
 				if (tree instanceof DefaultMessageTree) {
-					tree.getHeartbeats().add(h);
+                    tree.getHeartbeats().add(defaultHeartbeat);
 				}
 
-				return h;
+                LogUtil.info("解码 HEARTBEAT", U.format("defaultHeartbeat", U.toString(defaultHeartbeat)));
+
+
+                return defaultHeartbeat;
 			}
 
 			@Override
@@ -357,6 +400,10 @@ public class NativeMessageCodec implements MessageCodec {
 				ctx.writeString(buf, msg.getName());
 				ctx.writeString(buf, msg.getStatus());
 				ctx.writeString(buf, msg.getData().toString());
+
+                LogUtil.info("编码 HEARTBEAT", U.format("Message", U.toString(msg)));
+
+
 			}
 		},
 
@@ -368,12 +415,16 @@ public class NativeMessageCodec implements MessageCodec {
 				String name = ctx.readString(buf);
 				String status = ctx.readString(buf);
 				String data = ctx.readString(buf);
-				DefaultTrace t = new DefaultTrace(type, name);
+                DefaultTrace defaultTrace = new DefaultTrace(type, name);
 
-				t.setTimestamp(timestamp);
-				t.setStatus(status);
-				t.addData(data);
-				return t;
+                defaultTrace.setTimestamp(timestamp);
+                defaultTrace.setStatus(status);
+                defaultTrace.addData(data);
+
+                LogUtil.info("解码 TRACE", U.format("defaultTrace", U.toString(defaultTrace)));
+
+
+                return defaultTrace;
 			}
 
 			@Override
@@ -384,6 +435,10 @@ public class NativeMessageCodec implements MessageCodec {
 				ctx.writeString(buf, msg.getName());
 				ctx.writeString(buf, msg.getStatus());
 				ctx.writeString(buf, msg.getData().toString());
+
+                LogUtil.info("编码 TRACE", U.format("Message", U.toString(msg)));
+
+
 			}
 		};
 
@@ -402,13 +457,16 @@ public class NativeMessageCodec implements MessageCodec {
 		private byte[] m_data = new byte[256];
 
 		public Context(MessageTree tree) {
+            //LogUtil.info("实例化 Context", U.format("MessageTree", U.toString(tree)));
 			m_tree = tree;
 		}
 
 		public void addChild(Message msg) {
 			if (!m_parents.isEmpty()) {
+                LogUtil.info("m_tree 追加 child 消息");
 				m_parents.peek().addChild(msg);
 			} else {
+                LogUtil.info("向m_tree 添加 root 消息");
 				m_tree.setMessage(msg);
 			}
 		}
@@ -425,20 +483,39 @@ public class NativeMessageCodec implements MessageCodec {
 		}
 
 		public DefaultTransaction popTransaction() {
-			return m_parents.pop();
+            DefaultTransaction transaction = m_parents.pop();
+            LogUtil.info("Transaction 消息出队", U.format("transaction", U.toString(transaction)));
+            return transaction;
 		}
 
 		public void pushTransaction(DefaultTransaction t) {
 			if (!m_parents.isEmpty()) {
+                LogUtil.info("向 m_parents 追加 child DefaultTransaction 消息");
 				m_parents.peek().addChild(t);
 			}
-
+            LogUtil.info("m_parents 入栈 DefaultTransaction 消息");
 			m_parents.push(t);
 		}
 
 		public long readDuration(ByteBuf buf) {
 			return readVarint(buf, 64);
 		}
+
+        protected long readVarint(ByteBuf buf, int length) {
+            int shift = 0;
+            long result = 0;
+
+            while (shift < length) {
+                final byte b = buf.readByte();
+                result |= (long) (b & 0x7F) << shift;
+                if ((b & 0x80) == 0) {
+                    return result;
+                }
+                shift += 7;
+            }
+
+            throw new RuntimeException("Malformed variable int " + length + "!");
+        }
 
 		public char readId(ByteBuf buf) {
 			return (char) buf.readByte();
@@ -461,25 +538,21 @@ public class NativeMessageCodec implements MessageCodec {
 			return readVarint(buf, 64);
 		}
 
-		protected long readVarint(ByteBuf buf, int length) {
-			int shift = 0;
-			long result = 0;
-
-			while (shift < length) {
-				final byte b = buf.readByte();
-				result |= (long) (b & 0x7F) << shift;
-				if ((b & 0x80) == 0) {
-					return result;
-				}
-				shift += 7;
-			}
-
-			throw new RuntimeException("Malformed variable int " + length + "!");
-		}
-
 		public void writeDuration(ByteBuf buf, long duration) {
 			writeVarint(buf, duration);
 		}
+
+        private void writeVarint(ByteBuf buf, long value) {
+            while (true) {
+                if ((value & ~0x7FL) == 0) {
+                    buf.writeByte((byte) value);
+                    return;
+                } else {
+                    buf.writeByte(((byte) value & 0x7F) | 0x80);
+                    value >>>= 7;
+                }
+            }
+        }
 
 		public void writeId(ByteBuf buf, char id) {
 			buf.writeByte(id);
@@ -498,18 +571,6 @@ public class NativeMessageCodec implements MessageCodec {
 
 		public void writeTimestamp(ByteBuf buf, long timestamp) {
 			writeVarint(buf, timestamp); // TODO use relative value of root message timestamp
-		}
-
-		private void writeVarint(ByteBuf buf, long value) {
-			while (true) {
-				if ((value & ~0x7FL) == 0) {
-					buf.writeByte((byte) value);
-					return;
-				} else {
-					buf.writeByte(((byte) value & 0x7F) | 0x80);
-					value >>>= 7;
-				}
-			}
 		}
 
 		public void writeVersion(ByteBuf buf, String version) {
