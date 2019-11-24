@@ -18,47 +18,63 @@
  */
 package com.dianping.cat.configuration;
 
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
+
 public enum ProblemLongType {
 
 	LONG_CACHE("long-cache", 25) {
 		@Override
 		protected boolean checkLongType(String type) {
-			return type.startsWith("Squirrel.") || type.startsWith("Cellar.") || type.startsWith("Cache.");
+			Boolean result = type.startsWith("Squirrel.") || type.startsWith("Cellar.") || type.startsWith("Cache.");
+			LogUtil.info("long-cache 类型检测返参", U.format("result", result));
+			return result;
 		}
 	},
 
 	LONG_CALL("long-call", 100) {
 		@Override
 		protected boolean checkLongType(String type) {
-			return "PigeonCall".equals(type) || "OctoCall".equals(type) || "Call".equals(type);
+			Boolean result = "PigeonCall".equals(type) || "OctoCall".equals(type) || "Call".equals(type);
+			LogUtil.info("long-call 类型检测返参", U.format("result", result));
+			return result;
 		}
 	},
 
 	LONG_SERVICE("long-service", 100) {
 		@Override
 		protected boolean checkLongType(String type) {
-			return "PigeonService".equals(type) || "OctoService".equals(type) || "Service".equals(type);
+			Boolean result = "PigeonService".equals(type) || "OctoService".equals(type) || "Service".equals(type);
+			LogUtil.info("long-service 类型检测返参", U.format("result", result));
+			return result;
+
 		}
 	},
 
 	LONG_SQL("long-sql", 100) {
 		@Override
 		protected boolean checkLongType(String type) {
-			return "SQL".equals(type);
+			Boolean result = "SQL".equals(type);
+			LogUtil.info("long-sql 类型检测返参", U.format("result", result));
+			return result;
 		}
 	},
 
 	LONG_URL("long-url", 1000) {
 		@Override
 		protected boolean checkLongType(String type) {
-			return "URL".equals(type);
+			Boolean result = "URL".equals(type);
+			LogUtil.info("long-url 类型检测返参", U.format("result", result));
+			return result;
 		}
 	},
 
 	LONG_MQ("long-mq", 100) {
 		@Override
 		protected boolean checkLongType(String type) {
-			return "MtmqRecvMessage".equals(type) || "MafkaRecvMessage".equals(type);
+			Boolean result = "MtmqRecvMessage".equals(type) || "MafkaRecvMessage".equals(type);
+			LogUtil.info("long-mq 类型检测返参", U.format("result", result));
+			return result;
 		}
 	};
 
@@ -66,7 +82,7 @@ public enum ProblemLongType {
 
 	private int m_threshold;
 
-	private ProblemLongType(String name, int threshold) {
+	ProblemLongType(String name, int threshold) {
 		m_name = name;
 		m_threshold = threshold;
 	}
@@ -81,6 +97,10 @@ public enum ProblemLongType {
 		throw new RuntimeException("Error long type " + name);
 	}
 
+	public String getName() {
+		return m_name;
+	}
+
 	public static ProblemLongType findByMessageType(String type) {
 		for (ProblemLongType longType : values()) {
 			if (longType.checkLongType(type)) {
@@ -92,10 +112,6 @@ public enum ProblemLongType {
 	}
 
 	protected abstract boolean checkLongType(String type);
-
-	public String getName() {
-		return m_name;
-	}
 
 	public int getThreshold() {
 		return m_threshold;

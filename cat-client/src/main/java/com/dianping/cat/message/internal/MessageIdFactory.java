@@ -18,6 +18,14 @@
  */
 package com.dianping.cat.message.internal;
 
+import com.dianping.cat.Cat;
+import com.dianping.cat.configuration.NetworkInterfaceManager;
+import com.dianping.cat.util.CleanupHelper;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
+import org.unidal.helper.Splitters;
+import org.unidal.lookup.annotation.Named;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -31,13 +39,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.unidal.helper.Splitters;
-import org.unidal.lookup.annotation.Named;
-
-import com.dianping.cat.Cat;
-import com.dianping.cat.configuration.NetworkInterfaceManager;
-import com.dianping.cat.util.CleanupHelper;
 
 @Named
 public class MessageIdFactory {
@@ -62,21 +63,23 @@ public class MessageIdFactory {
 	private String m_idPrefix;
 
 	private String m_idPrefixOfMultiMode;
-	
+	private transient FileChannel m_markChannel;
+	private volatile boolean shutdownHookOn;
+
 	public void close() {
 		try {
 			saveMark();
-			if( m_byteBuffer != null ) {
+			if (m_byteBuffer != null) {
 				synchronized (m_byteBuffer) {
 					CleanupHelper.cleanup(m_byteBuffer);
 					m_byteBuffer = null;
 				}
 			}
-			if( m_markChannel != null ) {
+			if (m_markChannel != null) {
 				m_markChannel.close();
 				m_markChannel = null;
 			}
-			if( m_markFile != null ) {
+			if (m_markFile != null) {
 				m_markFile.close();
 				m_markFile = null;
 			}
@@ -85,10 +88,11 @@ public class MessageIdFactory {
 			// ignore it
 		}
 	}
-	
 
 	private File createMarkFile(String domain) {
 		File mark = new File(Cat.getCatHome(), "cat-" + domain + ".mark");
+
+		LogUtil.info("创建 MarkFile", U.format("file", mark.getAbsolutePath()));
 
 		if (!mark.exists()) {
 			boolean success = true;
@@ -110,31 +114,8 @@ public class MessageIdFactory {
 	private File createTempFile(String domain) {
 		String tmpDir = System.getProperty("java.io.tmpdir");
 		File mark = new File(tmpDir, "cat-" + domain + ".mark");
-
+		LogUtil.info("创建临时文件", U.format("file", mark.getAbsolutePath()));
 		return mark;
-	}
-
-	public String getNextId() {
-		long timestamp = getTimestamp();
-
-		if (timestamp != m_timestamp) {
-			synchronized (this) {
-				if (timestamp != m_timestamp) {
-					resetCounter(timestamp);
-				}
-			}
-		}
-
-		int index = m_index.getAndIncrement();
-		StringBuilder sb = new StringBuilder(64);
-
-		if (Cat.isMultiInstanceEnable()) {
-			sb.append(m_idPrefixOfMultiMode).append(index);
-		} else {
-			sb.append(m_idPrefix).append(index);
-		}
-
-		return sb.toString();
 	}
 
 	public String getNextId(String domain) {
@@ -173,8 +154,38 @@ public class MessageIdFactory {
 				sb.append(domain).append('-').append(m_ipAddress).append('-').append(timestamp).append('-').append(index);
 			}
 
-			return sb.toString();
+			String id = sb.toString();
+
+			LogUtil.info("根据 domain 生成 next id", U.format("id", id, "domain", domain, "processID", processID));
+
+			return id;
 		}
+	}
+
+	public String getNextId() {
+		long timestamp = getTimestamp();
+
+		if (timestamp != m_timestamp) {
+			synchronized (this) {
+				if (timestamp != m_timestamp) {
+					resetCounter(timestamp);
+				}
+			}
+		}
+
+		int index = m_index.getAndIncrement();
+		StringBuilder sb = new StringBuilder(64);
+
+		if (Cat.isMultiInstanceEnable()) {
+			sb.append(m_idPrefixOfMultiMode).append(index);
+		} else {
+			sb.append(m_idPrefix).append(index);
+		}
+		String id = sb.toString();
+
+		LogUtil.info("生成 next id", U.format("id", id));
+
+		return id;
 	}
 
 	private int getProcessID() {
@@ -192,9 +203,9 @@ public class MessageIdFactory {
 
 		return timestamp / HOUR; // version 2
 	}
-	
+
 	String genIpHex() {
-		String ip =  NetworkInterfaceManager.INSTANCE.getLocalHostAddress();
+		String ip = NetworkInterfaceManager.INSTANCE.getLocalHostAddress();
 		List<String> items = Splitters.by(".").noEmptyItem().split(ip);
 		byte[] bytes = new byte[4];
 
@@ -210,17 +221,17 @@ public class MessageIdFactory {
 		}
 		return sb.toString();
 	}
-	
-	private transient FileChannel m_markChannel;
 
 	public void initialize(String domain) throws IOException {
+
 		m_domain = domain;
 		m_ipAddress = genIpHex();
-		if( m_markFile != null ) {
+		if (m_markFile != null) {
 			synchronized (this) {
 				close();
 			}
 		}
+
 		File mark = createMarkFile(domain);
 		m_markFile = new RandomAccessFile(mark, "rw");
 		m_markChannel = m_markFile.getChannel();
@@ -262,12 +273,16 @@ public class MessageIdFactory {
 		}
 
 		saveMark();
-		if( !shutdownHookOn ) {
+
+		if (!shutdownHookOn) {
 			synchronized (this) {
-				if( !shutdownHookOn ) {
+				if (!shutdownHookOn) {
 					Runtime.getRuntime().addShutdownHook(new Thread() {
 						@Override
 						public void run() {
+
+							LogUtil.info("服务即将关闭,即将释放各种资源");
+
 							close();
 						}
 					});
@@ -276,7 +291,6 @@ public class MessageIdFactory {
 			shutdownHookOn = true;
 		}
 	}
-	private volatile boolean shutdownHookOn;
 
 	private String initIdPrefix(long timestamp, boolean multiMode) {
 		StringBuilder sb = new StringBuilder(m_domain.length() + 32);
@@ -284,12 +298,15 @@ public class MessageIdFactory {
 
 		if (multiMode && processID > 0) {
 			sb.append(m_domain).append('-').append(m_ipAddress).append(".").append(processID).append('-').append(timestamp)
-									.append('-');
+					.append('-');
 		} else {
 			sb.append(m_domain).append('-').append(m_ipAddress).append('-').append(timestamp).append('-');
 		}
 
-		return sb.toString();
+		String idPrefix = sb.toString();
+
+		LogUtil.info("初始化 MessageId 前缀", U.format("idPrefix", idPrefix, "processID", processID));
+		return idPrefix;
 	}
 
 	private void resetCounter(long timestamp) {
@@ -304,22 +321,26 @@ public class MessageIdFactory {
 
 		m_timestamp = timestamp;
 	}
+
 	public int getIndex() {
 		return m_index.get();
 	}
 
 	public synchronized void saveMark() {
-		if( m_byteBuffer == null ) {
+
+		if (m_byteBuffer == null) {
 			return;
 		}
+
 		try {
+
 			m_byteBuffer.rewind();
 			m_byteBuffer.putLong(m_timestamp);
 			m_byteBuffer.putInt(m_index.get());
 			m_byteBuffer.putInt(m_map.size());
 
 			for (Entry<String, AtomicInteger> entry : m_map.entrySet()) {
-				byte[] bytes = entry.getKey().toString().getBytes();
+				byte[] bytes = entry.getKey().getBytes();
 
 				m_byteBuffer.putInt(bytes.length);
 				m_byteBuffer.put(bytes);

@@ -20,6 +20,7 @@ package com.dianping.cat.message.io;
 
 import com.dianping.cat.configuration.ClientConfigManager;
 import com.dianping.cat.message.internal.MessageIdFactory;
+import com.doublespring.common.U;
 import com.doublespring.log.LogUtil;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -58,10 +59,12 @@ public class ChannelManager implements Task {
 	private Logger m_logger;
 
 	public ChannelManager(Logger logger, List<InetSocketAddress> serverAddresses, ClientConfigManager configManager,
-							MessageIdFactory idFactory) {
+						  MessageIdFactory idFactory) {
 		m_logger = logger;
 		m_configManager = configManager;
 		m_idFactory = idFactory;
+
+		LogUtil.info("实例化 ChannelManager");
 
 		EventLoopGroup group = new NioEventLoopGroup(1, new ThreadFactory() {
 			@Override
@@ -80,11 +83,15 @@ public class ChannelManager implements Task {
 			protected void initChannel(Channel ch) throws Exception {
 			}
 		});
+
 		m_bootstrap = bootstrap;
 
 		String routerConfig = m_configManager.getRouters();
 
 		if (StringUtils.isNotEmpty(routerConfig)) {
+
+			LogUtil.info("根据 routerConfig 实例化 Channel", U.format("routerConfig", U.toString(routerConfig)));
+
 			List<InetSocketAddress> configedAddresses = parseSocketAddress(routerConfig);
 			ChannelHolder holder = initChannel(configedAddresses, routerConfig);
 
@@ -94,91 +101,39 @@ public class ChannelManager implements Task {
 				m_activeChannelHolder = new ChannelHolder();
 				m_activeChannelHolder.setServerAddresses(configedAddresses);
 			}
+
 		} else {
+
+			LogUtil.info("根据 serverAddresses 实例化 Channel", U.format("serverAddresses", U.toString(serverAddresses)));
+
 			ChannelHolder holder = initChannel(serverAddresses, null);
 
 			if (holder != null) {
 				m_activeChannelHolder = holder;
 			} else {
+
 				m_activeChannelHolder = new ChannelHolder();
 				m_activeChannelHolder.setServerAddresses(serverAddresses);
-				m_logger.error("error when init cat module due to error config xml in client.xml");
+
+				LogUtil.info("根据 client.xml 初始化 cat module 失败", U.format("ChannelHolder", U.toString(m_activeChannelHolder)));
 			}
 		}
 	}
 
-	public ChannelFuture channel() {
-		if (m_activeChannelHolder != null) {
-			ChannelFuture future = m_activeChannelHolder.getActiveFuture();
+	private List<InetSocketAddress> parseSocketAddress(String content) {
+		try {
+			List<String> strs = Splitters.by(";").noEmptyItem().split(content);
+			List<InetSocketAddress> address = new ArrayList<InetSocketAddress>();
 
-			if (checkWritable(future)) {
-				return future;
+			for (String str : strs) {
+				List<String> items = Splitters.by(":").noEmptyItem().split(str);
+				address.add(new InetSocketAddress(items.get(0), Integer.parseInt(items.get(1))));
 			}
+			return address;
+		} catch (Exception e) {
+			m_logger.error(e.getMessage(), e);
 		}
-		return null;
-	}
-
-	private boolean checkActive(ChannelFuture future) {
-		boolean isActive = false;
-
-		if (future != null) {
-			Channel channel = future.channel();
-
-			if (channel.isActive() && channel.isOpen()) {
-				isActive = true;
-			} else {
-				m_logger.warn("channel buf is not active ,current channel " + future.channel().remoteAddress());
-			}
-		}
-
-		return isActive;
-	}
-
-	private void checkServerChanged() {
-		Pair<Boolean, String> pair = routerConfigChanged();
-
-		if (pair.getKey()) {
-			LogUtil.info("router config changed :" + pair.getValue());
-			String servers = pair.getValue();
-			List<InetSocketAddress> serverAddresses = parseSocketAddress(servers);
-			ChannelHolder newHolder = initChannel(serverAddresses, servers);
-
-			if (newHolder != null) {
-				if (newHolder.isConnectChanged()) {
-					ChannelHolder last = m_activeChannelHolder;
-
-					m_activeChannelHolder = newHolder;
-					closeChannelHolder(last);
-					LogUtil.info("switch active channel to " + m_activeChannelHolder);
-				} else {
-					m_activeChannelHolder = newHolder;
-				}
-			}
-		}
-	}
-
-	private boolean checkWritable(ChannelFuture future) {
-		boolean isWriteable = false;
-
-		if (future != null) {
-			Channel channel = future.channel();
-
-			if (channel.isActive() && channel.isOpen()) {
-				if (channel.isWritable()) {
-					isWriteable = true;
-				} else {
-					channel.flush();
-				}
-			} else {
-				int count = m_attempts.incrementAndGet();
-
-				if (count % 1000 == 0 || count == 1) {
-					m_logger.warn("channel buf is is close when send msg! Attempts: " + count);
-				}
-			}
-		}
-
-		return isWriteable;
+		return new ArrayList<InetSocketAddress>();
 	}
 
 	private ChannelHolder initChannel(List<InetSocketAddress> addresses, String serverConfig) {
@@ -205,7 +160,7 @@ public class ChannelManager implements Task {
 					holder.setActiveIndex(i).setIp(hostAddress);
 					holder.setActiveServerConfig(serverConfig).setServerAddresses(addresses);
 
-					LogUtil.info("success when init CAT server, new active holder" + holder.toString());
+					LogUtil.info("初始化 CAT server 成功, new active holder" + holder.toString());
 					return holder;
 				}
 			}
@@ -219,40 +174,33 @@ public class ChannelManager implements Task {
 			for (InetSocketAddress address : addresses) {
 				sb.append(address.toString()).append(";");
 			}
-			LogUtil.info("Error when init CAT server " + sb.toString());
+			LogUtil.info("初始化 CAT server 失败" + sb.toString());
 		} catch (Exception e) {
 			// ignore
 		}
 		return null;
 	}
 
-	private void closeChannelHolder(ChannelHolder channelHolder) {
-		try {
-			ChannelFuture channel = channelHolder.getActiveFuture();
-
-			closeChannel(channel);
-		} catch (Exception e) {
-			// ignore
-		}
-	}
-
 	private ChannelFuture createChannel(InetSocketAddress address) {
-		LogUtil.info("start connect server" + address.toString());
+
+		String serverIp = address.toString();
+		LogUtil.info("即将连接 Cat server", U.format("server ip", serverIp));
 		ChannelFuture future = null;
 
 		try {
+
 			future = m_bootstrap.connect(address);
 			future.awaitUninterruptibly(100, TimeUnit.MILLISECONDS); // 100 ms
 
 			if (!future.isSuccess()) {
-				m_logger.error("Error when try connecting to " + address);
+				LogUtil.info("连接 Cat server失败,即将关闭Channel", U.format("server ip", serverIp));
 				closeChannel(future);
 			} else {
-				LogUtil.info("Connected to CAT server at " + address);
+				LogUtil.info("连接 Cat server成功", U.format("server ip", serverIp));
 				return future;
 			}
 		} catch (Throwable e) {
-			m_logger.error("Error when connect server " + address.getAddress(), e);
+			LogUtil.info("连接 Cat server 抛出异常,即将关闭Channel", U.format("server ip", serverIp, "Throwable", U.toString(e)));
 
 			if (future != null) {
 				closeChannel(future);
@@ -261,11 +209,113 @@ public class ChannelManager implements Task {
 		return null;
 	}
 
+	private void closeChannel(ChannelFuture channel) {
+		try {
+			if (channel != null) {
+				SocketAddress address = channel.channel().remoteAddress();
+
+				if (address != null) {
+					LogUtil.info("即将关闭 Channel ", U.format("remoteAddress", address));
+				}
+				channel.channel().close();
+			}
+		} catch (Exception e) {
+			// ignore
+		}
+	}
+
+	public ChannelFuture channel() {
+		if (m_activeChannelHolder != null) {
+			ChannelFuture future = m_activeChannelHolder.getActiveFuture();
+
+			if (checkWritable(future)) {
+				return future;
+			}
+		}
+		return null;
+	}
+
+	private boolean checkWritable(ChannelFuture future) {
+		boolean isWriteable = false;
+
+		if (future != null) {
+			Channel channel = future.channel();
+
+			if (channel.isActive() && channel.isOpen()) {
+				if (channel.isWritable()) {
+					isWriteable = true;
+				} else {
+					channel.flush();
+				}
+			} else {
+				int count = m_attempts.incrementAndGet();
+				if (count % 1000 == 0 || count == 1) {
+					LogUtil.info("Channel 连接已关闭,不发送消息,尝试次数", U.format("count", count));
+				}
+			}
+		}
+
+		return isWriteable;
+	}
+
+	private boolean checkActive(ChannelFuture future) {
+		boolean isActive = false;
+
+		if (future != null) {
+			Channel channel = future.channel();
+
+			if (channel.isActive() && channel.isOpen()) {
+				isActive = true;
+			} else {
+				LogUtil.info("Channel 连接已失效", U.format("server ip", future.channel().remoteAddress()));
+			}
+		}
+
+		LogUtil.info("Channel 连接检测结果", U.format("isActive", isActive));
+
+		return isActive;
+	}
+
+	private void checkServerChanged() {
+		Pair<Boolean, String> pair = routerConfigChanged();
+
+		if (pair.getKey()) {
+			LogUtil.info("server 路由配置发生变更 :" + pair.getValue());
+			String servers = pair.getValue();
+			List<InetSocketAddress> serverAddresses = parseSocketAddress(servers);
+			ChannelHolder newHolder = initChannel(serverAddresses, servers);
+
+			if (newHolder != null) {
+				if (newHolder.isConnectChanged()) {
+					ChannelHolder last = m_activeChannelHolder;
+
+					m_activeChannelHolder = newHolder;
+					closeChannelHolder(last);
+					LogUtil.info("切换连接 Channel 为: " + m_activeChannelHolder);
+				} else {
+					m_activeChannelHolder = newHolder;
+				}
+			}
+		}
+	}
+
+	private void closeChannelHolder(ChannelHolder channelHolder) {
+		try {
+			ChannelFuture channel = channelHolder.getActiveFuture();
+			closeChannel(channel);
+		} catch (Exception e) {
+			// ignore
+		}
+	}
+
 	private void doubleCheckActiveServer(ChannelHolder channelHolder) {
 		try {
 			if (isChannelStalled(channelHolder)) {
 				closeChannelHolder(m_activeChannelHolder);
 				channelHolder.setActiveIndex(-1);
+				LogUtil.info("Channel 连接失败,即将关闭相关资源", U.format("ip", channelHolder.getIp()));
+			} else {
+				LogUtil.info("Channel 连接检测正常");
 			}
 		} catch (Throwable e) {
 			m_logger.error(e.getMessage(), e);
@@ -277,22 +327,13 @@ public class ChannelManager implements Task {
 		return "TcpSocketSender-ChannelManager";
 	}
 
-	private void closeChannel(ChannelFuture channel) {
-		try {
-			if (channel != null) {
-				SocketAddress address = channel.channel().remoteAddress();
-
-				if (address != null) {
-					LogUtil.info("close channel " + address);
-				}
-				channel.channel().close();
-			}
-		} catch (Exception e) {
-			// ignore
-		}
+	@Override
+	public void shutdown() {
+		m_active = false;
 	}
 
 	private boolean isChannelStalled(ChannelHolder holder) {
+
 		ChannelFuture future = holder.getActiveFuture();
 		boolean active = checkActive(future);
 
@@ -306,25 +347,11 @@ public class ChannelManager implements Task {
 		}
 	}
 
-	private List<InetSocketAddress> parseSocketAddress(String content) {
-		try {
-			List<String> strs = Splitters.by(";").noEmptyItem().split(content);
-			List<InetSocketAddress> address = new ArrayList<InetSocketAddress>();
-
-			for (String str : strs) {
-				List<String> items = Splitters.by(":").noEmptyItem().split(str);
-
-				address.add(new InetSocketAddress(items.get(0), Integer.parseInt(items.get(1))));
-			}
-			return address;
-		} catch (Exception e) {
-			m_logger.error(e.getMessage(), e);
-		}
-		return new ArrayList<InetSocketAddress>();
-	}
-
 	private void reconnectDefaultServer(ChannelFuture activeFuture, List<InetSocketAddress> serverAddresses) {
 		try {
+
+			LogUtil.info("重新连接 Cat Server");
+
 			int reconnectServers = m_activeChannelHolder.getActiveIndex();
 
 			if (reconnectServers == -1) {
@@ -339,27 +366,41 @@ public class ChannelManager implements Task {
 					m_activeChannelHolder.setActiveFuture(future);
 					m_activeChannelHolder.setActiveIndex(i);
 					closeChannel(lastFuture);
+					LogUtil.info("重新连接 Cat Server 失败");
+
 					break;
+				} else {
+					LogUtil.info("重新连接 Cat Server 成功", U.format("remoteAddress", future.channel().remoteAddress()));
 				}
 			}
 		} catch (Throwable e) {
-			m_logger.error(e.getMessage(), e);
+			LogUtil.info("重新连接 Cat Server 抛出异常", U.format("message", e.getMessage(), "Throwable", U.toString(e)));
 		}
 	}
 
 	private Pair<Boolean, String> routerConfigChanged() {
 		String routerConfig = m_configManager.getRouters();
 
+		Pair<Boolean, String> result = null;
 		if (!StringUtils.isEmpty(routerConfig) && !routerConfig.equals(m_activeChannelHolder.getActiveServerConfig())) {
-			return new Pair<Boolean, String>(true, routerConfig);
+			result = new Pair<Boolean, String>(true, routerConfig);
 		} else {
-			return new Pair<Boolean, String>(false, routerConfig);
+			result = new Pair<Boolean, String>(false, routerConfig);
 		}
+
+		LogUtil.info("routerConfig 发生变化", U.format("routerConfig", U.toString(routerConfig), "result", U.toString(result)));
+
+		return result;
 	}
 
 	@Override
 	public void run() {
+
+		LogUtil.info("启动 server 连接检测线程");
 		while (m_active) {
+
+			LogUtil.info("即将检测 Cat server 连接状态");
+
 			// make save message id index asyc
 			m_idFactory.saveMark();
 			checkServerChanged();
@@ -378,11 +419,6 @@ public class ChannelManager implements Task {
 		}
 	}
 
-	@Override
-	public void shutdown() {
-		m_active = false;
-	}
-
 	public static class ChannelHolder {
 		private ChannelFuture m_activeFuture;
 
@@ -395,6 +431,10 @@ public class ChannelManager implements Task {
 		private String m_ip;
 
 		private boolean m_connectChanged;
+
+		public ChannelHolder() {
+			LogUtil.info("实例化 ChannelHolder");
+		}
 
 		public ChannelFuture getActiveFuture() {
 			return m_activeFuture;
@@ -450,6 +490,7 @@ public class ChannelManager implements Task {
 			return this;
 		}
 
+		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
 
@@ -461,12 +502,5 @@ public class ChannelManager implements Task {
 		}
 	}
 
-	public class ClientMessageHandler extends SimpleChannelInboundHandler<Object> {
-
-		@Override
-		protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-			LogUtil.info("receiver msg from server:" + msg);
-		}
-	}
 
 }

@@ -23,6 +23,7 @@ import com.dianping.cat.configuration.ClientConfigManager;
 import com.dianping.cat.message.internal.MilliSecondTimer;
 import com.dianping.cat.message.io.TransportManager;
 import com.dianping.cat.status.StatusUpdateTask;
+import com.doublespring.common.U;
 import com.doublespring.log.LogUtil;
 import org.unidal.helper.Threads;
 import org.unidal.helper.Threads.AbstractThreadListener;
@@ -41,13 +42,19 @@ public class CatClientModule extends AbstractModule {
 
 	@Override
 	protected void execute(final ModuleContext ctx) throws Exception {
-		LogUtil.info("Current working directory is " + System.getProperty("user.dir"));
+
+		LogUtil.info("初始化 CatClientModule,当前工作目录为", U.format("user.dir", System.getProperty("user.dir")));
 
 		// initialize milli-second resolution level timer
+		LogUtil.info("初始化 MilliSecondTimer");
 		MilliSecondTimer.initialize();
 
 		// tracking thread start/stop
-		Threads.addListener(new CatThreadListener(ctx));
+		LogUtil.info("实例化线程监控 CatThreadListener");
+		CatThreadListener catThreadListener = new CatThreadListener(ctx);
+
+		LogUtil.info("注册线程监控 CatThreadListener");
+		Threads.addListener(catThreadListener);
 
 		ClientConfigManager clientConfigManager = ctx.lookup(ClientConfigManager.class);
 
@@ -72,6 +79,7 @@ public class CatClientModule extends AbstractModule {
 
 	@Override
 	public Module[] getDependencies(ModuleContext ctx) {
+		LogUtil.info("加载依赖模块");
 		return null; // no dependencies
 	}
 
@@ -79,32 +87,33 @@ public class CatClientModule extends AbstractModule {
 		private final ModuleContext m_ctx;
 
 		private CatThreadListener(ModuleContext ctx) {
+			LogUtil.info("初始化 CatThreadListener", U.format("ctx", U.toJSS(ctx)));
 			m_ctx = ctx;
 		}
 
 		@Override
 		public void onThreadGroupCreated(ThreadGroup group, String name) {
-			m_ctx.info(String.format("Thread group(%s) created.", name));
+			m_ctx.info(String.format("创建ThreadGroup(%s)", name));
 		}
 
 		@Override
 		public void onThreadPoolCreated(ExecutorService pool, String name) {
-			m_ctx.info(String.format("Thread pool(%s) created.", name));
+			m_ctx.info(String.format("创建 ExecutorService(%s)", name));
 		}
 
 		@Override
 		public void onThreadStarting(Thread thread, String name) {
-			m_ctx.info(String.format("Starting thread(%s) ...", name));
+			m_ctx.info(String.format("启动线程(%s)", name));
 		}
 
 		@Override
 		public void onThreadStopping(Thread thread, String name) {
-			m_ctx.info(String.format("Stopping thread(%s).", name));
+			m_ctx.info(String.format("停止线程(%s)", name));
 		}
 
 		@Override
 		public boolean onUncaughtException(Thread thread, Throwable e) {
-			m_ctx.error(String.format("Uncaught exception thrown out of thread(%s)", thread.getName()), e);
+			m_ctx.error(String.format("捕获到未知异常,线程名称(%s)", thread.getName()), e);
 			return true;
 		}
 	}

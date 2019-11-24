@@ -20,6 +20,8 @@ package com.dianping.cat.message.internal;
 
 import com.dianping.cat.message.Message;
 import com.dianping.cat.message.spi.codec.PlainTextMessageCodec;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
@@ -42,6 +44,7 @@ public abstract class AbstractMessage implements Message {
 		m_type = String.valueOf(type);
 		m_name = String.valueOf(name);
 		m_timestampInMillis = MilliSecondTimer.currentTimeMillis();
+		LogUtil.info("实例化 AbstractMessage", U.format("type", type, "name", name, "m_timestampInMillis", m_timestampInMillis));
 	}
 
 	@Override
@@ -110,6 +113,11 @@ public abstract class AbstractMessage implements Message {
 	}
 
 	@Override
+	public void setStatus(String status) {
+		m_status = status;
+	}
+
+	@Override
 	public long getTimestamp() {
 		return m_timestampInMillis;
 	}
@@ -143,8 +151,8 @@ public abstract class AbstractMessage implements Message {
 	}
 
 	@Override
-	public void setStatus(String status) {
-		m_status = status;
+	public void setSuccessStatus() {
+		m_status = SUCCESS;
 	}
 
 	@Override
@@ -155,11 +163,6 @@ public abstract class AbstractMessage implements Message {
 		codec.encodeMessage(this, buf);
 		codec.reset();
 		return buf.toString(Charset.forName("utf-8"));
-	}
-
-	@Override
-	public void setSuccessStatus() {
-		m_status = SUCCESS;
 	}
 
 }

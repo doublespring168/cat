@@ -27,6 +27,8 @@ import com.dianping.cat.message.internal.NullMessageManager;
 import com.dianping.cat.message.internal.NullMessageProducer;
 import com.dianping.cat.message.spi.MessageManager;
 import com.dianping.cat.message.spi.MessageTree;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.unidal.helper.Files;
@@ -41,8 +43,8 @@ import java.text.MessageFormat;
 import java.util.Date;
 
 /**
-	* This is the main entry point to the system.
-	*/
+ * This is the main entry point to the system.
+ */
 public class Cat {
 
 	private static Cat s_instance = new Cat();
@@ -60,16 +62,7 @@ public class Cat {
 	private PlexusContainer m_container;
 
 	private Cat() {
-	}
-
-	private static void checkAndInitialize() {
-		try {
-			if (!s_init) {
-				initialize(new File(getCatHome(), "client.xml"));
-			}
-		} catch (Exception e) {
-			errorHandler(e);
-		}
+		LogUtil.info("实例化 Cat");
 	}
 
 	public static String createMessageId() {
@@ -94,14 +87,6 @@ public class Cat {
 		if (m_errorCount++ % 100 == 0 || m_errorCount <= 3) {
 			e.printStackTrace();
 		}
-	}
-
-	public static String getCatHome() {
-		String catHome = CatPropertyProvider.INST.getProperty("CAT_HOME", CatConstants.CAT_HOME_DEFAULT_DIR);
-		if (!catHome.endsWith("/")) {
-			catHome = catHome + "/";
-		}
-		return catHome;
 	}
 
 	public static String getCurrentMessageId() {
@@ -129,36 +114,34 @@ public class Cat {
 		return s_instance;
 	}
 
-	public static MessageManager getManager() {
-		try {
-			checkAndInitialize();
-			MessageManager manager = s_instance.m_manager;
+	public static void initialize(PlexusContainer container, File configFile) {
+		ModuleContext ctx = new DefaultModuleContext(container);
+		Module module = ctx.lookup(Module.class, CatClientModule.ID);
 
-			if (manager != null) {
-				return manager;
-			} else {
-				return NullMessageManager.NULL_MESSAGE_MANAGER;
-			}
-		} catch (Exception e) {
-			errorHandler(e);
-			return NullMessageManager.NULL_MESSAGE_MANAGER;
+		if (!module.isInitialized()) {
+			ModuleInitializer initializer = ctx.lookup(ModuleInitializer.class);
+
+			ctx.setAttribute("cat-client-config-file", configFile);
+			initializer.execute(ctx, module);
 		}
 	}
 
-	public static MessageProducer getProducer() {
+	public static void initialize(String... servers) {
+		File configFile = null;
+
 		try {
-			checkAndInitialize();
+			configFile = File.createTempFile("cat-client", ".xml");
+			ClientConfig config = new ClientConfig().setMode("client");
 
-			MessageProducer producer = s_instance.m_producer;
-
-			if (producer != null) {
-				return producer;
-			} else {
-				return NullMessageProducer.NULL_MESSAGE_PRODUCER;
+			for (String server : servers) {
+				config.addServer(new Server(server));
 			}
+
+			Files.forIO().writeTo(configFile, config.toString());
+
+			initialize(configFile);
 		} catch (Exception e) {
 			errorHandler(e);
-			return NullMessageProducer.NULL_MESSAGE_PRODUCER;
 		}
 	}
 
@@ -188,32 +171,15 @@ public class Cat {
 		}
 	}
 
-	public static void initialize(PlexusContainer container, File configFile) {
-		ModuleContext ctx = new DefaultModuleContext(container);
-		Module module = ctx.lookup(Module.class, CatClientModule.ID);
+	static void log(String severity, String message) {
+		MessageFormat format = new MessageFormat("[{0,date,MM-dd HH:mm:ss.sss}] [{1}] [{2}] {3}");
 
-		if (!module.isInitialized()) {
-			ModuleInitializer initializer = ctx.lookup(ModuleInitializer.class);
-
-			ctx.setAttribute("cat-client-config-file", configFile);
-			initializer.execute(ctx, module);
-		}
+		System.out.println(format.format(new Object[]{new Date(), severity, "cat", message}));
 	}
 
-	public static void initialize(String... servers) {
-		File configFile = null;
-
+	public static void initializeByDomain(String domain, String... servers) {
 		try {
-			configFile = File.createTempFile("cat-client", ".xml");
-			ClientConfig config = new ClientConfig().setMode("client");
-
-			for (String server : servers) {
-				config.addServer(new Server(server));
-			}
-
-			Files.forIO().writeTo(configFile, config.toString());
-
-			initialize(configFile);
+			initializeByDomain(domain, 2280, 80, servers);
 		} catch (Exception e) {
 			errorHandler(e);
 		}
@@ -251,22 +217,17 @@ public class Cat {
 		}
 	}
 
-	public static void initializeByDomain(String domain, String... servers) {
-		try {
-			initializeByDomain(domain, 2280, 80, servers);
-		} catch (Exception e) {
-			errorHandler(e);
-		}
+	/**
+	 * Increase the counter specified by <code>name</code> by one.
+	 *
+	 * @param name the name of the metric default count value is 1
+	 */
+	public static void logMetricForCount(String name) {
+		logMetricInternal(name, "C", "1");
 	}
 
 	public static boolean isInitialized() {
 		return s_init;
-	}
-
-	static void log(String severity, String message) {
-		MessageFormat format = new MessageFormat("[{0,date,MM-dd HH:mm:ss.sss}] [{1}] [{2}] {3}");
-
-		System.out.println(format.format(new Object[] { new Date(), severity, "cat", message }));
 	}
 
 	public static void logError(String message, Throwable cause) {
@@ -274,6 +235,31 @@ public class Cat {
 			Cat.getProducer().logError(message, cause);
 		} catch (Exception e) {
 			errorHandler(e);
+		}
+	}
+
+	private static void logMetricInternal(String name, String status, String keyValuePairs) {
+		try {
+			Cat.getProducer().logMetric(name, status, keyValuePairs);
+		} catch (Exception e) {
+			errorHandler(e);
+		}
+	}
+
+	public static MessageProducer getProducer() {
+		try {
+			checkAndInitialize();
+
+			MessageProducer producer = s_instance.m_producer;
+
+			if (producer != null) {
+				return producer;
+			} else {
+				return NullMessageProducer.NULL_MESSAGE_PRODUCER;
+			}
+		} catch (Exception e) {
+			errorHandler(e);
+			return NullMessageProducer.NULL_MESSAGE_PRODUCER;
 		}
 	}
 
@@ -313,79 +299,80 @@ public class Cat {
 		// TO REMOVE ME
 	}
 
-	/**
-		* Increase the counter specified by <code>name</code> by one.
-		*
-		* @param name the name of the metric default count value is 1
-		*/
-	public static void logMetricForCount(String name) {
-		logMetricInternal(name, "C", "1");
-	}
-
-	/**
-		* Increase the counter specified by <code>name</code> by one.
-		*
-		* @param name the name of the metric
-		*/
-	public static void logMetricForCount(String name, int quantity) {
-		logMetricInternal(name, "C", String.valueOf(quantity));
-	}
-
-	/**
-		* Increase the metric specified by <code>name</code> by <code>durationInMillis</code>.
-		*
-		* @param name             the name of the metric
-		* @param durationInMillis duration in milli-second added to the metric
-		*/
-	public static void logMetricForDuration(String name, long durationInMillis) {
-		logMetricInternal(name, "T", String.valueOf(durationInMillis));
-	}
-
-	/**
-		* Increase the sum specified by <code>name</code> by <code>value</code> only for one item.
-		*
-		* @param name  the name of the metric
-		* @param value the value added to the metric
-		*/
-	public static void logMetricForSum(String name, double value) {
-		logMetricInternal(name, "S", String.format("%.2f", value));
-	}
-
-	/**
-		* Increase the metric specified by <code>name</code> by <code>sum</code> for multiple items.
-		*
-		* @param name     the name of the metric
-		* @param sum      the sum value added to the metric
-		* @param quantity the quantity to be accumulated
-		*/
-	public static void logMetricForSum(String name, double sum, int quantity) {
-		logMetricInternal(name, "S,C", String.format("%s,%.2f", quantity, sum));
-	}
-
-	private static void logMetricInternal(String name, String status, String keyValuePairs) {
+	private static void checkAndInitialize() {
 		try {
-			Cat.getProducer().logMetric(name, status, keyValuePairs);
+			if (!s_init) {
+				initialize(new File(getCatHome(), "client.xml"));
+			}
 		} catch (Exception e) {
 			errorHandler(e);
 		}
 	}
 
+	public static String getCatHome() {
+		String catHome = CatPropertyProvider.INST.getProperty("CAT_HOME", CatConstants.CAT_HOME_DEFAULT_DIR);
+		if (!catHome.endsWith("/")) {
+			catHome = catHome + "/";
+		}
+		return catHome;
+	}
+
 	/**
-		* logRemoteCallClient is used in rpc client
-		*
-		* @param ctx    ctx is rpc context ,such as duboo context , please use rpc context implement Context
-		* @param domain domain is default, if use default config, the performance of server storage is bad。
-		*/
+	 * Increase the counter specified by <code>name</code> by one.
+	 *
+	 * @param name the name of the metric
+	 */
+	public static void logMetricForCount(String name, int quantity) {
+		logMetricInternal(name, "C", String.valueOf(quantity));
+	}
+
+	/**
+	 * Increase the metric specified by <code>name</code> by <code>durationInMillis</code>.
+	 *
+	 * @param name             the name of the metric
+	 * @param durationInMillis duration in milli-second added to the metric
+	 */
+	public static void logMetricForDuration(String name, long durationInMillis) {
+		logMetricInternal(name, "T", String.valueOf(durationInMillis));
+	}
+
+	/**
+	 * Increase the sum specified by <code>name</code> by <code>value</code> only for one item.
+	 *
+	 * @param name  the name of the metric
+	 * @param value the value added to the metric
+	 */
+	public static void logMetricForSum(String name, double value) {
+		logMetricInternal(name, "S", String.format("%.2f", value));
+	}
+
+	/**
+	 * Increase the metric specified by <code>name</code> by <code>sum</code> for multiple items.
+	 *
+	 * @param name     the name of the metric
+	 * @param sum      the sum value added to the metric
+	 * @param quantity the quantity to be accumulated
+	 */
+	public static void logMetricForSum(String name, double sum, int quantity) {
+		logMetricInternal(name, "S,C", String.format("%s,%.2f", quantity, sum));
+	}
+
+	/**
+	 * logRemoteCallClient is used in rpc client
+	 *
+	 * @param ctx    ctx is rpc context ,such as duboo context , please use rpc context implement Context
+	 * @param domain domain is default, if use default config, the performance of server storage is bad。
+	 */
 	public static void logRemoteCallClient(Context ctx) {
 		logRemoteCallClient(ctx, "default");
 	}
 
 	/**
-		* logRemoteCallClient is used in rpc client
-		*
-		* @param ctx    ctx is rpc context ,such as duboo context , please use rpc context implement Context
-		* @param domain domain is project name of rpc server name
-		*/
+	 * logRemoteCallClient is used in rpc client
+	 *
+	 * @param ctx    ctx is rpc context ,such as duboo context , please use rpc context implement Context
+	 * @param domain domain is project name of rpc server name
+	 */
 	public static void logRemoteCallClient(Context ctx, String domain) {
 		try {
 			MessageTree tree = Cat.getManager().getThreadLocalMessageTree();
@@ -414,10 +401,10 @@ public class Cat {
 	}
 
 	/**
-		* used in rpc server，use clild id as server message tree id.
-		*
-		* @param ctx ctx is rpc context ,such as duboo context , please use rpc context implement Context
-		*/
+	 * used in rpc server，use clild id as server message tree id.
+	 *
+	 * @param ctx ctx is rpc context ,such as duboo context , please use rpc context implement Context
+	 */
 	public static void logRemoteCallServer(Context ctx) {
 		try {
 			MessageTree tree = Cat.getManager().getThreadLocalMessageTree();
@@ -436,6 +423,22 @@ public class Cat {
 			}
 		} catch (Exception e) {
 			errorHandler(e);
+		}
+	}
+
+	public static MessageManager getManager() {
+		try {
+			checkAndInitialize();
+			MessageManager manager = s_instance.m_manager;
+
+			if (manager != null) {
+				return manager;
+			} else {
+				return NullMessageManager.NULL_MESSAGE_MANAGER;
+			}
+		} catch (Exception e) {
+			errorHandler(e);
+			return NullMessageManager.NULL_MESSAGE_MANAGER;
 		}
 	}
 
@@ -541,25 +544,28 @@ public class Cat {
 
 	void setContainer(PlexusContainer container) {
 		try {
+			LogUtil.info("初始化 m_container 属性", U.format("PlexusContainer", U.toString(container)));
 			m_container = container;
+			LogUtil.info("初始化 MessageManager");
 			m_manager = container.lookup(MessageManager.class);
+			LogUtil.info("初始化 MessageProducer");
 			m_producer = container.lookup(MessageProducer.class);
 		} catch (ComponentLookupException e) {
 			throw new RuntimeException(
-									"Unable to get instance of MessageManager, "	+ "please make sure the environment was setup correctly!", e);
+					"Unable to get instance of MessageManager, " + "please make sure the environment was setup correctly!", e);
 		}
 	}
 
-    public interface Context {
+	public interface Context {
 
-        String ROOT = "_catRootMessageId";
+		String ROOT = "_catRootMessageId";
 
-        String PARENT = "_catParentMessageId";
+		String PARENT = "_catParentMessageId";
 
-        String CHILD = "_catChildMessageId";
+		String CHILD = "_catChildMessageId";
 
-        void addProperty(String key, String value);
+		void addProperty(String key, String value);
 
-        String getProperty(String key);
+		String getProperty(String key);
 	}
 }

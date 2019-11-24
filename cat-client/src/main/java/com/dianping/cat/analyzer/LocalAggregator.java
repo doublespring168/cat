@@ -18,18 +18,26 @@
  */
 package com.dianping.cat.analyzer;
 
-import java.util.List;
-
 import com.dianping.cat.Cat;
 import com.dianping.cat.message.Event;
 import com.dianping.cat.message.Message;
 import com.dianping.cat.message.Transaction;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.util.Threads.Task;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
+
+import java.util.List;
 
 public class LocalAggregator {
 
+	public LocalAggregator() {
+		LogUtil.info("实例化 LocalAggregator");
+	}
+
 	public static void aggregate(MessageTree tree) {
+
+
 		analyzerProcessTree(tree);
 	}
 
@@ -44,6 +52,9 @@ public class LocalAggregator {
 	}
 
 	private static void analyzerProcessTransaction(Transaction transaction) {
+
+		LogUtil.info("正在聚合 Transaction 消息", U.format("Transaction", U.toString(transaction)));
+
 		TransactionAggregator.getInstance().logTransaction(transaction);
 		List<Message> child = transaction.getChildren();
 
@@ -63,6 +74,11 @@ public class LocalAggregator {
 		@Override
 		public String getName() {
 			return "local-data-aggregator";
+		}
+
+		@Override
+		public void shutdown() {
+			m_active = false;
 		}
 
 		@Override
@@ -87,11 +103,6 @@ public class LocalAggregator {
 					}
 				}
 			}
-		}
-
-		@Override
-		public void shutdown() {
-			m_active = false;
 		}
 	}
 
