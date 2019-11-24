@@ -18,12 +18,18 @@
  */
 package com.dianping.cat.message.io;
 
+import com.dianping.cat.message.spi.MessageQueue;
+import com.dianping.cat.message.spi.MessageTree;
+
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import com.dianping.cat.message.spi.MessageQueue;
-import com.dianping.cat.message.spi.MessageTree;
+/**
+ * 功能说明：这里加日志要小心,会造成统计功能紊乱
+ * Author：Darcy
+ * Date：2019-11-24 10:36
+ */
 
 public class DefaultMessageQueue implements MessageQueue {
 

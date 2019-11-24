@@ -21,6 +21,8 @@ package com.dianping.cat.task;
 import com.dianping.cat.Cat;
 import com.dianping.cat.helper.TimeHelper;
 import com.dianping.cat.message.Transaction;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
 import org.unidal.helper.Threads;
 import org.unidal.helper.Threads.Task;
 
@@ -41,6 +43,9 @@ public class TimerSyncTask implements Task {
 	private List<SyncHandler> m_handlers = new ArrayList<SyncHandler>();
 
 	public static TimerSyncTask getInstance() {
+
+		LogUtil.info("加载 TimerSyncTask 实例");
+
 		if (!m_active) {
 			synchronized (TimerSyncTask.class) {
 				if (!m_active) {
@@ -58,17 +63,29 @@ public class TimerSyncTask implements Task {
 		return "timer-sync-task";
 	}
 
+	@Override
+	public void shutdown() {
+	}
+
 	public void register(SyncHandler handler) {
 		synchronized (this) {
+			LogUtil.info("添加SyncHandler", U.format("SyncHandler", U.toString(handler)));
 			m_handlers.add(handler);
 		}
 	}
 
 	@Override
 	public void run() {
+
 		boolean active = TimeHelper.sleepToNextMinute();
 
+		LogUtil.info("1min后启动数据同步线程");
+
+
 		while (active) {
+
+			LogUtil.info("开始数据同步");
+
 			long current = System.currentTimeMillis();
 
 			for (final SyncHandler handler : m_handlers) {
@@ -79,6 +96,7 @@ public class TimerSyncTask implements Task {
 						final Transaction t = Cat.newTransaction("TimerSync", handler.getName());
 
 						try {
+							LogUtil.info("运行数据同步任务", U.format("handler", handler.getName()));
 							handler.handle();
 							t.setStatus(Transaction.SUCCESS);
 						} catch (Exception e) {
@@ -98,20 +116,17 @@ public class TimerSyncTask implements Task {
 					Thread.sleep(DURATION - duration);
 				}
 			} catch (InterruptedException e) {
+				LogUtil.info("数据同步线程休眠过程抛出异常,设置active=false");
 				active = false;
 			}
 		}
 	}
 
-	@Override
-	public void shutdown() {
-	}
-
 	public interface SyncHandler {
 
-		public String getName();
+		String getName();
 
-		public void handle() throws Exception;
+		void handle() throws Exception;
 
 	}
 

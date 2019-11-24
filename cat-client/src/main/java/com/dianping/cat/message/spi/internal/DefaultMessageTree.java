@@ -18,21 +18,18 @@
  */
 package com.dianping.cat.message.spi.internal;
 
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-
-import io.netty.buffer.ByteBuf;
-
 import com.dianping.cat.Cat;
-import com.dianping.cat.message.Event;
-import com.dianping.cat.message.Heartbeat;
-import com.dianping.cat.message.Message;
-import com.dianping.cat.message.Metric;
-import com.dianping.cat.message.Transaction;
+import com.dianping.cat.message.*;
 import com.dianping.cat.message.internal.MessageId;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.message.spi.codec.PlainTextMessageCodec;
+import com.doublespring.common.U;
+import com.doublespring.log.LogUtil;
+import io.netty.buffer.ByteBuf;
+
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DefaultMessageTree implements MessageTree {
 
@@ -76,6 +73,10 @@ public class DefaultMessageTree implements MessageTree {
 
 	private List<Metric> metrics = new ArrayList<Metric>();
 
+	public DefaultMessageTree() {
+		LogUtil.info("实例化 DefaultMessageTree");
+	}
+
 	@Override
 	public boolean canDiscard() {
 		return m_discard;
@@ -83,6 +84,9 @@ public class DefaultMessageTree implements MessageTree {
 
 	@Override
 	public MessageTree copy() {
+
+		LogUtil.info("复制 MessageTree");
+
 		MessageTree tree = new DefaultMessageTree();
 
 		tree.setDomain(m_domain);
@@ -98,70 +102,48 @@ public class DefaultMessageTree implements MessageTree {
 		tree.setMessage(m_message);
 		tree.setDiscardPrivate(m_discard);
 		tree.setHitSample(m_hitSample);
+
 		return tree;
 	}
 
+	@Override
 	public List<Event> findOrCreateEvents() {
+
+		LogUtil.info("生成 Events 信息");
 		if (events == null) {
 			events = new ArrayList<Event>();
 		}
 		return events;
 	}
 
+	@Override
 	public List<Heartbeat> findOrCreateHeartbeats() {
+		LogUtil.info("生成 Heartbeats 信息");
 		if (heartbeats == null) {
 			heartbeats = new ArrayList<Heartbeat>();
 		}
 		return heartbeats;
 	}
 
+	@Override
 	public List<Metric> findOrCreateMetrics() {
+		LogUtil.info("生成 Metrics 信息");
 		if (metrics == null) {
 			metrics = new ArrayList<Metric>();
 		}
 		return metrics;
 	}
 
+	@Override
 	public List<Transaction> findOrCreateTransactions() {
+		LogUtil.info("生成 Transactions 信息");
 		if (transactions == null) {
 			transactions = new ArrayList<Transaction>();
 		}
 		return transactions;
 	}
 
-	public MessageTree copyForTest() {
-		ByteBuf buf = null;
-		try {
-			PlainTextMessageCodec codec = new PlainTextMessageCodec();
-			buf = codec.encode(this);
-			//buf.readInt(); // get rid of length
-
-			return codec.decode(buf);
-		} catch (Exception ex) {
-			Cat.logError(ex);
-		}
-
-		return null;
-	}
-
-	public void clearMessageList() {
-		if (transactions != null) {
-			transactions.clear();
-		}
-
-		if (events != null) {
-			events.clear();
-		}
-
-		if (heartbeats != null) {
-			heartbeats.clear();
-		}
-
-		if (metrics != null) {
-			metrics.clear();
-		}
-	}
-
+	@Override
 	public ByteBuf getBuffer() {
 		return m_buf;
 	}
@@ -180,22 +162,29 @@ public class DefaultMessageTree implements MessageTree {
 		m_domain = domain;
 	}
 
+	@Override
 	public List<Event> getEvents() {
 		return events;
 	}
 
+	@Override
 	public MessageId getFormatMessageId() {
+
 		if (m_formatMessageId == null) {
 			m_formatMessageId = MessageId.parse(m_messageId);
 		}
 
+		LogUtil.info("加载 MessageId 信息", U.format("m_formatMessageId", m_formatMessageId));
+
 		return m_formatMessageId;
 	}
 
+	@Override
 	public void setFormatMessageId(MessageId formatMessageId) {
 		m_formatMessageId = formatMessageId;
 	}
 
+	@Override
 	public List<Heartbeat> getHeartbeats() {
 		return heartbeats;
 	}
@@ -247,11 +236,13 @@ public class DefaultMessageTree implements MessageTree {
 
 	@Override
 	public void setMessageId(String messageId) {
+		LogUtil.info("设置 messageId", U.format("messageId", messageId));
 		if (messageId != null && messageId.length() > 0) {
 			m_messageId = messageId;
 		}
 	}
 
+	@Override
 	public List<Metric> getMetrics() {
 		return metrics;
 	}
@@ -263,6 +254,7 @@ public class DefaultMessageTree implements MessageTree {
 
 	@Override
 	public void setParentMessageId(String parentMessageId) {
+		LogUtil.info("设置 parentMessageId", U.format("parentMessageId", parentMessageId));
 		if (parentMessageId != null && parentMessageId.length() > 0) {
 			m_parentMessageId = parentMessageId;
 		}
@@ -275,6 +267,7 @@ public class DefaultMessageTree implements MessageTree {
 
 	@Override
 	public void setRootMessageId(String rootMessageId) {
+		LogUtil.info("设置 rootMessageId", U.format("rootMessageId", rootMessageId));
 		if (rootMessageId != null && rootMessageId.length() > 0) {
 			m_rootMessageId = rootMessageId;
 		}
@@ -310,6 +303,7 @@ public class DefaultMessageTree implements MessageTree {
 		m_threadName = threadName;
 	}
 
+	@Override
 	public List<Transaction> getTransactions() {
 		return transactions;
 	}
@@ -324,6 +318,7 @@ public class DefaultMessageTree implements MessageTree {
 		m_processLoss = loss;
 	}
 
+	@Override
 	public void setDiscard(boolean discard) {
 		m_discard = discard;
 	}
@@ -338,8 +333,42 @@ public class DefaultMessageTree implements MessageTree {
 		m_hitSample = hitSample;
 	}
 
+	@Override
 	public void setDiscardPrivate(boolean discard) {
 		m_discard = discard;
+	}
+
+	public MessageTree copyForTest() {
+		ByteBuf buf = null;
+		try {
+			PlainTextMessageCodec codec = new PlainTextMessageCodec();
+			buf = codec.encode(this);
+			//buf.readInt(); // get rid of length
+
+			return codec.decode(buf);
+		} catch (Exception ex) {
+			Cat.logError(ex);
+		}
+
+		return null;
+	}
+
+	public void clearMessageList() {
+		if (transactions != null) {
+			transactions.clear();
+		}
+
+		if (events != null) {
+			events.clear();
+		}
+
+		if (heartbeats != null) {
+			heartbeats.clear();
+		}
+
+		if (metrics != null) {
+			metrics.clear();
+		}
 	}
 
 	@Override

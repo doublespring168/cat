@@ -18,6 +18,8 @@
  */
 package com.dianping.cat.status;
 
+import com.doublespring.log.LogUtil;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +30,7 @@ public class StatusExtensionRegister {
 	private List<StatusExtension> m_extensions = new ArrayList<StatusExtension>();
 
 	private StatusExtensionRegister() {
+		LogUtil.info("实例化 StatusExtensionRegister");
 	}
 
 	public static StatusExtensionRegister getInstance() {
@@ -42,6 +45,7 @@ public class StatusExtensionRegister {
 
 	public void register(StatusExtension monitor) {
 		synchronized (this) {
+			LogUtil.info("注册 StatusExtension monitor");
 			m_extensions.add(monitor);
 		}
 	}
